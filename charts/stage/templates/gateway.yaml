@@ -1,0 +1,64 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# The gateway of the stage, a public load balancer whose IP carries the
+# free Azure name cars-<stage>.<region>.cloudapp.azure.com. cert-manager
+# fills the secret of the https listener. http only redirects to https
+# and answers the challenges of Let's Encrypt; https accepts the routes
+# of the namespaces of this stage.
+{{- include "stage.check" . }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: cars-{{ .Values.stage }}
+  namespace: {{ .Values.gatewayNamespace }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ .Values.issuer }}
+spec:
+  gatewayClassName: {{ .Values.gatewayClassName }}
+  infrastructure:
+    annotations:
+      service.beta.kubernetes.io/azure-dns-label-name: cars-{{ .Values.stage }}
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: {{ include "stage.host" . }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: {{ include "stage.host" . }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: cars-{{ .Values.stage }}-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              cars-stage: {{ .Values.stage }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: cars-{{ .Values.stage }}-to-https
+  namespace: {{ .Values.gatewayNamespace }}
+spec:
+  parentRefs:
+    - name: cars-{{ .Values.stage }}
+      sectionName: http
+  hostnames:
+    - {{ include "stage.host" . }}
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301

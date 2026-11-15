@@ -1,0 +1,13 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# The namespace of the gateways of all stages
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cars-gateway
+  labels:
+    app.kubernetes.io/part-of: cars

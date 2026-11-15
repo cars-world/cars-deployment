@@ -1,0 +1,11 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+apiVersion: v2
+name: stage
+description: "One stage: the namespaces of both sides with quotas and network policies, and the gateway with its free Azure name and certificate"
+type: application
+version: 0.1.0

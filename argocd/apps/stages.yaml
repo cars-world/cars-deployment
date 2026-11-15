@@ -1,0 +1,43 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# One application per file in stages/: the namespaces, quotas, network
+# policies and the gateway of that stage
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: stages
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: [missingkey=error]
+  generators:
+    - git:
+        repoURL: https://github.com/rljson/cars-deployment.git
+        revision: rework_cars_azure_infra
+        files:
+          - path: stages/*.yaml
+  template:
+    metadata:
+      name: 'stage-{{ .stage }}'
+      annotations:
+        argocd.argoproj.io/sync-wave: "0"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/rljson/cars-deployment.git
+        targetRevision: rework_cars_azure_infra
+        path: charts/stage
+        helm:
+          valueFiles: ['../../{{ .path.path }}/{{ .path.filename }}']
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: cars-gateway
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        retry:
+          limit: 5
+          backoff: { duration: 30s }

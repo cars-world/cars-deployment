@@ -1,0 +1,66 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# The pods run on the node pool of their side: they select its label and
+# tolerate its taint side=<side>:NoSchedule.
+{{- include "app.check" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Chart.Name }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Chart.Name }}
+  template:
+    metadata:
+      labels:
+        {{- include "app.labels" . | nindent 8 }}
+    spec:
+      nodeSelector:
+        side: {{ .Values.side }}
+      tolerations:
+        - key: side
+          operator: Equal
+          value: {{ .Values.side }}
+          effect: NoSchedule
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ printf "%s/%s:%s" .Values.image.registry (.Values.image.repository | default (printf "cars-%s" (include "app.name" .))) .Values.image.tag }}
+          env:
+            {{- include "app.env" . | nindent 12 }}
+            {{- range $name, $value := .Values.env }}
+            - name: {{ $name }}
+              value: {{ $value | quote }}
+            {{- end }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.port }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: {{ .Values.readOnlyRootFilesystem }}
+            capabilities:
+              drop: ['ALL']
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.healthPath }}
+              port: http
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.healthPath }}
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

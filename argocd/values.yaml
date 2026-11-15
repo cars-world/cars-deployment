@@ -1,0 +1,49 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# Values of Argo CD in the namespace argocd, installed by bootstrap.js
+# from the chart argo/argo-cd. No ingress: the UI is reached through
+# kubectl port-forward. Sign-in with Entra comes later; until then the
+# built-in admin with the password of argocd-initial-admin-secret.
+
+configs:
+  cm:
+    exec.enabled: false
+    statusbadge.enabled: false
+  params:
+    # TLS ends at the port-forward
+    server.insecure: true
+
+dex:
+  enabled: false
+
+notifications:
+  enabled: false
+
+controller:
+  resources:
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { memory: 768Mi }
+
+server:
+  resources:
+    requests: { cpu: 25m, memory: 64Mi }
+    limits: { memory: 256Mi }
+
+repoServer:
+  resources:
+    requests: { cpu: 25m, memory: 64Mi }
+    limits: { memory: 512Mi }
+
+applicationSet:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
+
+redis:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }

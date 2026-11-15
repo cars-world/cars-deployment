@@ -1,0 +1,27 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# Defaults of the chart stage. Each file in stages/ sets stage.
+
+# dev, test or prod
+stage: ""
+
+# The free Azure name of the gateway: cars-<stage>.<region>.cloudapp.azure.com
+region: germanywestcentral
+
+gatewayClassName: approuting-istio
+gatewayNamespace: cars-gateway
+
+# The ClusterIssuer of cert-manager: letsencrypt-staging while names and
+# routes are tried out, letsencrypt for certificates browsers trust
+issuer: letsencrypt-staging
+
+# What all pods of one namespace may request together
+quota:
+  requestsCpu: 500m
+  requestsMemory: 512Mi
+  limitsMemory: 1Gi
+  pods: 10
