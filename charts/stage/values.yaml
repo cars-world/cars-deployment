@@ -19,6 +19,11 @@ gatewayNamespace: cars-gateway
 # routes are tried out, letsencrypt for certificates browsers trust
 issuer: letsencrypt
 
+# Requests of each gateway pod; an idle proxy uses about 1m and 30Mi
+gatewayResources:
+  requestsCpu: 25m
+  requestsMemory: 64Mi
+
 # What all pods of one namespace may request together
 quota:
   requestsCpu: 500m

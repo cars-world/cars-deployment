@@ -1,0 +1,26 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# The size of the gateway pods. The add-on runs at least two per Gateway;
+# their requests are lowered to what an idle proxy uses, so the gateways fit
+# the pool system. Referenced by spec.infrastructure.parametersRef.
+{{- include "stage.check" . }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cars-{{ .Values.stage }}-gateway-options
+  namespace: {{ .Values.gatewayNamespace }}
+data:
+  deployment: |
+    spec:
+      template:
+        spec:
+          containers:
+            - name: istio-proxy
+              resources:
+                requests:
+                  cpu: {{ .Values.gatewayResources.requestsCpu }}
+                  memory: {{ .Values.gatewayResources.requestsMemory }}

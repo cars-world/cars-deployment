@@ -20,6 +20,10 @@ metadata:
 spec:
   gatewayClassName: {{ .Values.gatewayClassName }}
   infrastructure:
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: cars-{{ .Values.stage }}-gateway-options
     annotations:
       service.beta.kubernetes.io/azure-dns-label-name: cars-{{ .Values.stage }}
   listeners:
