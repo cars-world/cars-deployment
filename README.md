@@ -30,7 +30,7 @@ this repo.
 | ------------------ | -------------------------------------------------------------------------------- |
 | `charts/master`    | Helm chart of a master: the Node.js service of one side in one stage             |
 | `charts/client`    | Helm chart of a client: the static website, nginx forwards `/api/` to the master |
-| `charts/stage`     | Helm chart of a stage: two namespaces, quotas, network policies, the gateway     |
+| `charts/stage`     | Helm chart of a stage: two namespaces, quotas, network policies, the gateways    |
 | `values`           | `<side>-<service>-<stage>.yaml`, twelve in all: side, service, stage, image tag  |
 | `stages`           | `dev.yaml`, `test.yaml`, `prod.yaml`                                             |
 | `platform`         | The namespace `cars-gateway` and the Let's Encrypt issuers                       |

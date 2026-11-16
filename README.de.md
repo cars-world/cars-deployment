@@ -30,7 +30,7 @@ synchron halten.
 | ------------------ | ----------------------------------------------------------------------------------- |
 | `charts/master`    | Helm-Chart eines Masters: der Node.js-Dienst einer Seite in einer Stufe             |
 | `charts/client`    | Helm-Chart eines Clients: die statische Website, nginx leitet `/api/` zum Master    |
-| `charts/stage`     | Helm-Chart einer Stufe: zwei Namespaces, Quoten, Netzwerkrichtlinien, das Gateway   |
+| `charts/stage`     | Helm-Chart einer Stufe: zwei Namespaces, Quoten, Netzwerkrichtlinien, die Gateways  |
 | `values`           | `<side>-<service>-<stage>.yaml`, zwölf insgesamt: Seite, Dienst, Stufe, Image-Tag   |
 | `stages`           | `dev.yaml`, `test.yaml`, `prod.yaml`                                                |
 | `platform`         | Der Namespace `cars-gateway` und die Aussteller von Let's Encrypt                   |
