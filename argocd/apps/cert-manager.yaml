@@ -31,15 +31,20 @@ spec:
   destination:
     server: https://kubernetes.default.svc
     namespace: cert-manager
-  # The cainjector of cert-manager writes the CA bundle into its webhooks
-  # after the sync; Argo CD leaves that field alone
+  # Two fields of its webhooks change after the sync, and Argo CD leaves
+  # them alone: the cainjector of cert-manager writes the CA bundle, and
+  # AKS adds its own entries to the namespace selector
   ignoreDifferences:
     - group: admissionregistration.k8s.io
       kind: ValidatingWebhookConfiguration
-      jqPathExpressions: ['.webhooks[]?.clientConfig.caBundle']
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+        - '.webhooks[]?.namespaceSelector'
     - group: admissionregistration.k8s.io
       kind: MutatingWebhookConfiguration
-      jqPathExpressions: ['.webhooks[]?.clientConfig.caBundle']
+      jqPathExpressions:
+        - '.webhooks[]?.clientConfig.caBundle'
+        - '.webhooks[]?.namespaceSelector'
   syncPolicy:
     automated: { prune: true, selfHeal: true }
     syncOptions: [CreateNamespace=true, ServerSideApply=true, RespectIgnoreDifferences=true]
