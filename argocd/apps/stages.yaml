@@ -17,7 +17,7 @@ spec:
   generators:
     - git:
         repoURL: https://github.com/rljson/cars-deployment.git
-        revision: rework_cars_azure_infra
+        revision: main
         files:
           - path: stages/*.yaml
   template:
@@ -29,7 +29,7 @@ spec:
       project: default
       source:
         repoURL: https://github.com/rljson/cars-deployment.git
-        targetRevision: rework_cars_azure_infra
+        targetRevision: main
         path: charts/stage
         helm:
           valueFiles: ['../../{{ .path.path }}/{{ .path.filename }}']
