@@ -10,4 +10,4 @@ side: origin
 service: master
 stage: prod
 image:
-  tag: 0.0.1
+  tag: 0.0.1-4db1903
