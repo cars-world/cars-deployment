@@ -37,6 +37,7 @@ this repo.
 | `argocd`           | The values of Argo CD, the root application and `apps/`, which it syncs          |
 | `bootstrap.js`     | Installs Argo CD and hands it the root application                               |
 | `promote.js`       | Copies the image tags of one stage into the next, as a commit                    |
+| `set-password.js`  | Sets the password of a personal Argo CD account                                  |
 | `test.js`          | Lints the charts and renders all twelve apps and three stages                    |
 
 ```mermaid
@@ -87,11 +88,22 @@ Install Argo CD once; it then syncs everything from git:
 node bootstrap.js
 ```
 
-Open the UI of Argo CD; the script prints the password command:
+Set the password of your personal account; the accounts are listed in
+`configs.cm` of `argocd/values.yaml`, the built-in admin is off:
+
+```bash
+node set-password.js ben
+```
+
+Open the UI of Argo CD at <http://localhost:8080> and sign in with it:
 
 ```bash
 kubectl -n argocd port-forward svc/argocd-server 8080:80
 ```
+
+Add an account: list it in `configs.cm` and `configs.rbac` of
+`argocd/values.yaml`, run `node bootstrap.js`, then
+`node set-password.js <account>`.
 
 Change an app: edit its values file, commit and push; Argo CD syncs it.
 Promote a stage to the next, then push and open a pull request:
@@ -115,7 +127,7 @@ node test.js
 ## Limitations
 
 - No CI: an operator builds the images and edits the tags by hand
-- The UI of Argo CD only through port-forward, with the built-in admin;
+- The UI of Argo CD only through port-forward, with personal accounts;
   sign-in with Entra comes later
 - The cluster stops every evening; start it with `az aks start`
 

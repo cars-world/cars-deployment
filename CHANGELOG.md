@@ -17,4 +17,6 @@
 - Certificates come from `letsencrypt` by default; Argo CD ignores the
   CA bundle and the namespace selector that change in the webhooks of
   cert-manager after the sync
+- The built-in admin of Argo CD is off; operators sign in with personal
+  accounts, starting with `ben`, whose password `set-password.js` sets
 - Remove the Helm charts and ArgoCD of the environment `demo`

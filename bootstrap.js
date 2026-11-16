@@ -52,10 +52,8 @@ await run(async () => {
   ]);
   show('kubectl', ['apply', '-f', 'argocd/root.yaml']);
 
-  console.log('✅ Argo CD runs and syncs argocd/apps. Open its UI with:');
+  console.log('✅ Argo CD runs and syncs argocd/apps. Set your password and open its UI:');
+  console.log('   node set-password.js <account>');
   console.log('   kubectl -n argocd port-forward svc/argocd-server 8080:80');
-  console.log('   then http://localhost:8080, user admin, password from:');
-  console.log(
-    "   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d",
-  );
+  console.log('   then http://localhost:8080');
 });

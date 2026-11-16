@@ -37,6 +37,7 @@ synchron halten.
 | `argocd`           | Die Werte von Argo CD, die Root-Anwendung und `apps/`, das sie synchronisiert       |
 | `bootstrap.js`     | Installiert Argo CD und übergibt ihm die Root-Anwendung                             |
 | `promote.js`       | Kopiert die Image-Tags einer Stufe als Commit in die nächste                        |
+| `set-password.js`  | Setzt das Passwort eines persönlichen Argo-CD-Kontos                                |
 | `test.js`          | Prüft die Charts und rendert alle zwölf Apps und drei Stufen                        |
 
 ```mermaid
@@ -87,12 +88,23 @@ Argo CD einmal installieren; danach synchronisiert es alles aus git:
 node bootstrap.js
 ```
 
-Die Oberfläche von Argo CD öffnen; das Skript zeigt den Befehl für das
-Passwort:
+Das Passwort des eigenen Kontos setzen; die Konten stehen in
+`configs.cm` von `argocd/values.yaml`, der eingebaute Admin ist aus:
+
+```bash
+node set-password.js ben
+```
+
+Die Oberfläche von Argo CD unter <http://localhost:8080> öffnen und sich
+damit anmelden:
 
 ```bash
 kubectl -n argocd port-forward svc/argocd-server 8080:80
 ```
+
+Ein Konto hinzufügen: es in `configs.cm` und `configs.rbac` von
+`argocd/values.yaml` eintragen, `node bootstrap.js` ausführen, dann
+`node set-password.js <account>`.
 
 Eine App ändern: ihre Value-Datei bearbeiten, committen und pushen; Argo
 CD synchronisiert sie. Eine Stufe in die nächste befördern, dann pushen
@@ -117,8 +129,8 @@ node test.js
 ## Grenzen
 
 - Keine CI: ein Betreiber baut die Images und ändert die Tags von Hand
-- Die Oberfläche von Argo CD nur über Port-Forward, mit dem eingebauten
-  Admin; die Anmeldung mit Entra folgt später
+- Die Oberfläche von Argo CD nur über Port-Forward, mit persönlichen
+  Konten; die Anmeldung mit Entra folgt später
 - Der Cluster stoppt jeden Abend; mit `az aks start` starten
 
 ## Stand
