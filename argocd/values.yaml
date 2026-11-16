@@ -9,8 +9,15 @@
 # kubectl port-forward. Sign-in with Entra comes later; until then every
 # operator has a personal account, whose password set-password.js sets.
 
+# The address of the UI through the port-forward. Without it the chart
+# assumes https://argocd.example.com, and the browser drops the session
+# cookie on plain http.
+global:
+  domain: localhost:8080
+
 configs:
   cm:
+    url: http://localhost:8080
     # Built-in admin off; every operator signs in with a personal account
     admin.enabled: false
     accounts.ben: login

@@ -18,5 +18,6 @@
   CA bundle and the namespace selector that change in the webhooks of
   cert-manager after the sync
 - The built-in admin of Argo CD is off; operators sign in with personal
-  accounts, starting with `ben`, whose password `set-password.js` sets
+  accounts, starting with `ben`, whose password `set-password.js` sets;
+  its URL is the port-forward `http://localhost:8080`
 - Remove the Helm charts and ArgoCD of the environment `demo`
