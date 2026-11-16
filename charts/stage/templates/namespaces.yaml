@@ -1,0 +1,47 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# The namespaces cars-origin-<stage> and cars-custom-<stage>, each with a
+# quota and the defaults of a container. The label cars-stage lets the
+# routes of the namespace attach to the gateway of the stage.
+{{- include "stage.check" . }}
+{{- range $side := list "origin" "custom" }}
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cars-{{ $side }}-{{ $.Values.stage }}
+  labels:
+    app.kubernetes.io/part-of: cars
+    cars-side: {{ $side }}
+    cars-stage: {{ $.Values.stage }}
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: quota
+  namespace: cars-{{ $side }}-{{ $.Values.stage }}
+spec:
+  hard:
+    requests.cpu: {{ $.Values.quota.requestsCpu }}
+    requests.memory: {{ $.Values.quota.requestsMemory }}
+    limits.memory: {{ $.Values.quota.limitsMemory }}
+    pods: {{ $.Values.quota.pods | quote }}
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: defaults
+  namespace: cars-{{ $side }}-{{ $.Values.stage }}
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      default:
+        memory: 128Mi
+{{- end }}

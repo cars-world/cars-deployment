@@ -10,71 +10,138 @@ found in the LICENSE file in the root of this package.
 
 [English](README.md) | Deutsch
 
-Was im Kubernetes-Cluster der Cars-Anwendung läuft, einer Beispiel-App auf
-Rljson: Helm-Charts und die ArgoCD-Applications, die den Cluster mit diesem Repo synchron halten.
+Was im Kubernetes-Cluster `aks-cars` der cars-Anwendung läuft, einer
+Beispiel-App auf Rljson: Helm-Charts, eine Value-Datei je App und Stufe
+und die Argo-CD-Anwendungen, die den Cluster mit diesem Repo
+synchron halten.
 
 ## Motivation
 
-- Der Zustand des Clusters ist in Git beschrieben; ArgoCD wendet jede
-  gemergte Änderung an und macht Abweichungen rückgängig
-- Ein neues Image erreicht den Cluster durch eine gemergte Änderung seiner
-  `image-tag.yaml`, durch nichts sonst
+- Was im Cluster läuft, ist in git beschrieben; eine Stufe ändert sich
+  nur durch einen Commit hier
+- Ein Argo CD bedient die Stufen `dev`, `test` und `prod`
 - Die Azure-Ressourcen liegen in
-  [cars-infra](https://github.com/rljson/cars-infra); ArgoCD beobachtet nur
-  dieses Repo
+  [cars-infra](https://github.com/rljson/cars-infra); eine Änderung an
+  einem Image berührt sie nie
 
 ## Aufbau
 
-| Ordner        | Inhalt                                                                          |
-| ------------- | ------------------------------------------------------------------------------- |
-| `charts`      | Ein Helm-Chart je Workload: `values.yaml`, `demo-values.yaml`, `image-tag.yaml` |
-| `argocd`      | Werte der ArgoCD-Installation                                                   |
-| `argocd/apps` | App of Apps: `root.yaml` und eine Application je Workload und Umgebung          |
+| Pfad               | Inhalt                                                                              |
+| ------------------ | ----------------------------------------------------------------------------------- |
+| `charts/master`    | Helm-Chart eines Masters: der Node.js-Dienst einer Seite in einer Stufe             |
+| `charts/client`    | Helm-Chart eines Clients: die statische Website, nginx leitet `/api/` zum Master    |
+| `charts/stage`     | Helm-Chart einer Stufe: zwei Namespaces, Quoten, Netzwerkrichtlinien, die Gateways  |
+| `values`           | `<side>-<service>-<stage>.yaml`, zwölf insgesamt: Seite, Dienst, Stufe, Image-Tag   |
+| `stages`           | `dev.yaml`, `test.yaml`, `prod.yaml`                                                |
+| `platform`         | Der Namespace `cars-gateway` und die Aussteller von Let's Encrypt                   |
+| `argocd`           | Die Werte von Argo CD, die Root-Anwendung und `apps/`, das sie synchronisiert       |
+| `bootstrap.js`     | Installiert Argo CD und übergibt ihm die Root-Anwendung                             |
+| `promote.js`       | Kopiert die Image-Tags einer Stufe als Commit in die nächste                        |
+| `set-password.js`  | Setzt das Passwort eines persönlichen Argo-CD-Kontos                                |
+| `test.js`          | Prüft die Charts und rendert alle zwölf Apps und drei Stufen                        |
 
-Drei Workloads laufen im Namespace `demo`, jeder für sich und nur über
-HTTP erreichbar: `cars-ui`, das Frontend als statische Dateien, leitet
-`/api` an `cars-bff` weiter, das Backend for Frontend, das `cars-master`
-fragt, den Stammdaten-Server.
+```mermaid
+flowchart LR
+  git["cars-deployment<br/>auf GitHub"] --> root["Argo CD: root"]
+  root --> cm["cert-manager"]
+  root --> pf["platform"]
+  root --> st["ApplicationSet stages<br/>stage-dev, -test, -prod"]
+  root --> ap["ApplicationSet apps<br/>zwölf Apps"]
+  st --> gw["Gateways cars-&lt;side&gt;-&lt;stage&gt;<br/>Namespaces cars-&lt;side&gt;-&lt;stage&gt;"]
+  ap --> pods["Master und Client<br/>je Seite und Stufe"]
+```
+
+Jede Seite einer Stufe hat ein Gateway im Namespace `cars-gateway`,
+dessen öffentliche IP den kostenlosen Azure-Namen
+`cars-<side>-<stage>.germanywestcentral.cloudapp.azure.com` trägt, sechs
+insgesamt. Der Client antwortet unter `/` seines Hosts, der Master unter
+`/api` desselben Hosts:
+
+| App           | URL in `dev`                                                        |
+| ------------- | ------------------------------------------------------------------- |
+| origin client | `https://cars-origin-dev.germanywestcentral.cloudapp.azure.com/`    |
+| origin master | `https://cars-origin-dev.germanywestcentral.cloudapp.azure.com/api/hello` |
+| custom client | `https://cars-custom-dev.germanywestcentral.cloudapp.azure.com/`    |
+| custom master | `https://cars-custom-dev.germanywestcentral.cloudapp.azure.com/api/hello` |
+
+http wird auf https umgeleitet. Ein Gateway nimmt nur die Routen seines
+eigenen Namespaces an. Das Add-on betreibt zwei Pods je Gateway;
+`gatewayResources` in `charts/stage/values.yaml` setzt ihre Anforderungen.
+Die Pods einer Seite laufen auf ihrem Node Pool. Verkehr in einen Namespace
+kommt nur aus demselben Namespace und von den Gateways; der origin
+master nimmt zusätzlich den custom master derselben Stufe an.
+cert-manager holt je Gateway ein Zertifikat von Let's Encrypt; `issuer`
+in `charts/stage/values.yaml` wählt `letsencrypt`, dessen Zertifikaten
+Browser vertrauen, oder `letsencrypt-staging`, um neue Namen unter
+großzügigen Grenzen auszuprobieren.
 
 ## Verwendung
 
-Zuerst wird ein Image in der Registry gebaut; dann wird sein Tag in
-`charts/<workload>/image-tag.yaml` per Pull Request geändert. Nach dem
-Merge synchronisiert ArgoCD ihn in den Cluster.
+[Node.js](https://nodejs.org) 22 oder neuer, [Helm](https://helm.sh),
+kubectl und kubelogin installieren, dann am Cluster anmelden:
 
 ```bash
-az acr build --registry <registry> --image <workload>:<tag> .
+az aks get-credentials --resource-group rg-cars --name aks-cars
+kubelogin convert-kubeconfig -l azurecli
 ```
 
-### ArgoCD
-
-ArgoCD läuft im Namespace `argocd`. Installieren oder aktualisieren,
-das Passwort eines persönlichen Kontos setzen und die Oberfläche auf
-<https://localhost:8443> öffnen:
+Argo CD einmal installieren; danach synchronisiert es alles aus git:
 
 ```bash
-argocd/install.sh
-argocd/set-password.sh <konto>
-argocd/ui.sh
+node bootstrap.js
 ```
 
-Die App of Apps wird einmal von Hand angewendet; danach synchronisiert
-ArgoCD jede Application in `argocd/apps` von `main`, mit Auto-Sync, Prune
-und Self-Heal:
+Das Passwort des eigenen Kontos setzen; die Konten stehen in
+`configs.cm` von `argocd/values.yaml`, der eingebaute Admin ist aus:
 
 ```bash
-kubectl apply -n argocd -f argocd/apps/root.yaml
+node set-password.js ben
 ```
 
-Der eingebaute `admin` ist aus; Konten und ihre Rollen stehen in
-`argocd/values.yaml`. Single Sign-on mit Entra folgt später.
+Die Oberfläche von Argo CD unter <http://localhost:8080> öffnen und sich
+damit anmelden:
+
+```bash
+kubectl -n argocd port-forward svc/argocd-server 8080:80
+```
+
+Ein Konto hinzufügen: es in `configs.cm` und `configs.rbac` von
+`argocd/values.yaml` eintragen, `node bootstrap.js` ausführen, dann
+`node set-password.js <account>`.
+
+Eine App ändern: ihre Value-Datei bearbeiten, committen und pushen; Argo
+CD synchronisiert sie. Eine Stufe in die nächste befördern, dann pushen
+und einen Pull Request öffnen:
+
+```bash
+node promote.js dev test
+node promote.js test prod
+```
+
+Argo CD folgt dem Branch, den `targetRevision` und `revision` jeder Datei
+in `argocd` nennen; `test.js` prüft, dass sie übereinstimmen.
+
+## Test
+
+Vor jedem Commit:
+
+```bash
+node test.js
+```
 
 ## Grenzen
 
-- Keine CI: ein Betreiber baut Images und ändert Tags von Hand
-- Nur eine Umgebung, `demo`
+- Keine CI: ein Betreiber baut die Images und ändert die Tags von Hand
+- Die Oberfläche von Argo CD nur über Port-Forward, mit persönlichen
+  Konten; die Anmeldung mit Entra folgt später
+- Der Cluster stoppt jeden Abend; mit `az aks start` starten
 
 ## Stand
 
-ArgoCD synchronisiert `cars-ui`, `cars-bff` und `cars-master` aus ihren
-Charts in den Namespace `demo`. Nichts wird mehr von Hand angewendet.
+Argo CD läuft in `aks-cars` und hält alle achtzehn Anwendungen synchron:
+cert-manager, platform, die drei Stufen und die zwölf Apps. Alle zwölf
+URLs antworten über HTTPS mit Zertifikaten von Let's Encrypt.
+
+## Lizenz
+
+MIT — siehe [LICENSE](LICENSE).

@@ -1,0 +1,74 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# One gateway per side of the stage, a public load balancer whose IP
+# carries the free Azure name cars-<side>-<stage>.<region>.cloudapp.azure.com.
+# cert-manager fills the secret of the https listener. http only redirects
+# to https and answers the challenges of Let's Encrypt; https accepts the
+# routes of the namespace of this side and stage only.
+{{- include "stage.check" . }}
+{{- range $side := list "origin" "custom" }}
+{{- $name := printf "cars-%s-%s" $side $.Values.stage }}
+{{- $host := printf "%s.%s.cloudapp.azure.com" $name $.Values.region }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ $name }}
+  namespace: {{ $.Values.gatewayNamespace }}
+  annotations:
+    cert-manager.io/cluster-issuer: {{ $.Values.issuer }}
+spec:
+  gatewayClassName: {{ $.Values.gatewayClassName }}
+  infrastructure:
+    parametersRef:
+      group: ""
+      kind: ConfigMap
+      name: cars-{{ $.Values.stage }}-gateway-options
+    annotations:
+      service.beta.kubernetes.io/azure-dns-label-name: {{ $name }}
+  listeners:
+    - name: http
+      protocol: HTTP
+      port: 80
+      hostname: {{ $host }}
+      allowedRoutes:
+        namespaces:
+          from: Same
+    - name: https
+      protocol: HTTPS
+      port: 443
+      hostname: {{ $host }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: {{ $name }}-tls
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              cars-side: {{ $side }}
+              cars-stage: {{ $.Values.stage }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ $name }}-to-https
+  namespace: {{ $.Values.gatewayNamespace }}
+spec:
+  parentRefs:
+    - name: {{ $name }}
+      sectionName: http
+  hostnames:
+    - {{ $host }}
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            statusCode: 301
+{{- end }}

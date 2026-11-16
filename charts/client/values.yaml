@@ -1,0 +1,41 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# Defaults of the chart client. Each values file in values/ sets side,
+# stage and image.tag, and may add env.
+
+# origin or custom; selects the image, the namespace and the node pool
+side: ""
+# dev, test or prod; selects the namespace and the gateway
+stage: ""
+
+image:
+  registry: crcars.azurecr.io
+  # Default: cars-<side>-client
+  repository: ""
+  tag: ""
+
+# The free Azure name of the gateway of a stage:
+# cars-<stage>.<region>.cloudapp.azure.com
+region: germanywestcentral
+
+# The gateway of each stage lives in this namespace
+gatewayNamespace: cars-gateway
+
+replicas: 1
+port: 8080
+healthPath: /health
+readOnlyRootFilesystem: false
+
+# Extra environment variables of the container
+env: {}
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    memory: 128Mi

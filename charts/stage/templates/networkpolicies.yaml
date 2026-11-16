@@ -1,0 +1,57 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# Traffic into a namespace is denied unless it comes from the same
+# namespace or from the gateways. The origin master also accepts the
+# custom side of the same stage: the publishing connection.
+{{- include "stage.check" . }}
+{{- range $side := list "origin" "custom" }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-from-other-namespaces
+  namespace: cars-{{ $side }}-{{ $.Values.stage }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector: {}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-from-gateway
+  namespace: cars-{{ $side }}-{{ $.Values.stage }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ $.Values.gatewayNamespace }}
+{{- end }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-publishing-from-custom
+  namespace: cars-origin-{{ .Values.stage }}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: master
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cars-custom-{{ .Values.stage }}
+          podSelector:
+            matchLabels:
+              app.kubernetes.io/name: master

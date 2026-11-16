@@ -1,0 +1,47 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# The issuers of Let's Encrypt. Each answers the HTTP-01 challenge on the
+# http listener of the gateway that asks for a certificate.
+# letsencrypt-staging issues certificates browsers do not trust, under
+# generous rate limits; letsencrypt issues trusted ones.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging-account
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - { name: cars-dev, namespace: cars-gateway, sectionName: http, kind: Gateway }
+              - { name: cars-test, namespace: cars-gateway, sectionName: http, kind: Gateway }
+              - { name: cars-prod, namespace: cars-gateway, sectionName: http, kind: Gateway }
+---
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-account
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - { name: cars-dev, namespace: cars-gateway, sectionName: http, kind: Gateway }
+              - { name: cars-test, namespace: cars-gateway, sectionName: http, kind: Gateway }
+              - { name: cars-prod, namespace: cars-gateway, sectionName: http, kind: Gateway }

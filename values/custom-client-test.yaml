@@ -1,0 +1,13 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# The client of the side custom in the stage test, rendered by charts/client.
+# promote.js changes image.tag only.
+side: custom
+service: client
+stage: test
+image:
+  tag: 0.0.1

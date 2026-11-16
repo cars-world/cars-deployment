@@ -4,17 +4,21 @@
 # Use of this source code is governed by terms that can be
 # found in the LICENSE file in the root of this package.
 
-# Values of the ArgoCD installation in the namespace argocd.
-# Chart argo/argo-cd, version pinned in install.sh.
-#
-# Lean on purpose: one small node, no ingress, UI through port-forward.
+# Values of Argo CD in the namespace argocd, installed by bootstrap.js
+# from the chart argo/argo-cd. No ingress: the UI is reached through
+# kubectl port-forward. Sign-in with Entra comes later; until then every
+# operator has a personal account, whose password set-password.js sets.
 
+# The address of the UI through the port-forward. Without it the chart
+# assumes https://argocd.example.com, and the browser drops the session
+# cookie on plain http.
 global:
-  domain: localhost:8443
+  domain: localhost:8080
 
 configs:
   cm:
-    # Built-in admin off; every operator signs in with a personal account.
+    url: http://localhost:8080
+    # Built-in admin off; every operator signs in with a personal account
     admin.enabled: false
     accounts.ben: login
     exec.enabled: false
@@ -23,17 +27,13 @@ configs:
     policy.default: ""
     policy.csv: |
       g, ben, role:admin
-  secret:
-    # Passwords are set by set-password.sh, never by Helm.
-    createSecret: true
+  params:
+    # TLS ends at the port-forward
+    server.insecure: true
 
-# Single sign-on with Entra comes later; no Dex until then.
 dex:
   enabled: false
 
-# Not needed for the app of apps.
-applicationSet:
-  replicas: 0
 notifications:
   enabled: false
 
@@ -51,6 +51,11 @@ repoServer:
   resources:
     requests: { cpu: 25m, memory: 64Mi }
     limits: { memory: 512Mi }
+
+applicationSet:
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 128Mi }
 
 redis:
   resources:

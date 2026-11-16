@@ -9,13 +9,13 @@
   "name": "cars-deployment",
 
   // 1-2 sentence summary about this repo.
-  "summary": "What runs in the Kubernetes cluster of the cars application: Helm charts with their value files and image tags, and the ArgoCD applications that sync them.",
+  "summary": "What runs in the Kubernetes cluster aks-cars of the cars application: Helm charts of the masters, clients and stages, twelve values files, Argo CD applications, and the Node.js scripts bootstrap.js, promote.js, set-password.js and test.js.",
 
   // 1-3 bullet points: the problem space.
   "domain": [
-    "Kubernetes workloads cars-ui, cars-bff and cars-master in namespace demo",
-    "Helm charts, value files values.yaml → demo-values.yaml → image-tag.yaml",
-    "ArgoCD by Helm in namespace argocd, personal accounts, app of apps, auto-sync from git"
+    "Helm charts master, client and stage; values/<side>-<service>-<stage>.yaml; namespaces cars-<side>-<stage> with quotas and network policies",
+    "Argo CD with a root application and ApplicationSets; promotion dev → test → prod as a commit",
+    "Gateway API on approuting-istio, one gateway per side and stage, free Azure names cars-<side>-<stage>.germanywestcentral.cloudapp.azure.com, client at /, master at /api, cert-manager with Let's Encrypt"
   ],
 
   // The repos this one depends on and the repos depending on it.
@@ -23,7 +23,7 @@
   "interfaces": {
     // "<repo-a>": "why / API"
     "uses": {
-      "cars-infra": "AKS cluster and container registry the workloads run on and pull from"
+      "cars-infra": "the cluster aks-cars with the node pools origin and custom, the registry crcars, the gateway class of the application routing add-on"
     },
 
     // "<repo-b>": "why / API"
