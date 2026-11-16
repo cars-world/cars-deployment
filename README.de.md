@@ -67,8 +67,9 @@ Pods einer Seite laufen auf ihrem Node Pool. Verkehr in einen Namespace
 kommt nur aus demselben Namespace und von den Gateways; der origin
 master nimmt zusätzlich den custom master derselben Stufe an.
 cert-manager holt je Gateway ein Zertifikat von Let's Encrypt; `issuer`
-in `charts/stage/values.yaml` wählt `letsencrypt-staging` oder
-`letsencrypt`.
+in `charts/stage/values.yaml` wählt `letsencrypt`, dessen Zertifikaten
+Browser vertrauen, oder `letsencrypt-staging`, um neue Namen unter
+großzügigen Grenzen auszuprobieren.
 
 ## Verwendung
 

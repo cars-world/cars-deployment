@@ -67,7 +67,8 @@ a side run on its node pool. Traffic into a namespace comes only from the
 same namespace and the gateways; the origin master also accepts the
 custom master of the same stage. cert-manager gets a certificate per
 gateway from Let's Encrypt; `issuer` in `charts/stage/values.yaml`
-selects `letsencrypt-staging` or `letsencrypt`.
+selects `letsencrypt`, whose certificates browsers trust, or
+`letsencrypt-staging` for trying out new names under generous limits.
 
 ## Usage
 

@@ -17,7 +17,7 @@ gatewayNamespace: cars-gateway
 
 # The ClusterIssuer of cert-manager: letsencrypt-staging while names and
 # routes are tried out, letsencrypt for certificates browsers trust
-issuer: letsencrypt-staging
+issuer: letsencrypt
 
 # What all pods of one namespace may request together
 quota:
