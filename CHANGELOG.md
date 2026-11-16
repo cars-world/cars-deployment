@@ -14,4 +14,7 @@
   root application and the ApplicationSets `stages` and `apps`
 - Add the Node.js scripts `bootstrap.js`, `promote.js` and `test.js` with
   unit tests
+- Certificates come from `letsencrypt` by default; Argo CD ignores the
+  CA bundle and the namespace selector that change in the webhooks of
+  cert-manager after the sync
 - Remove the Helm charts and ArgoCD of the environment `demo`

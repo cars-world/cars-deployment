@@ -121,8 +121,9 @@ node test.js
 
 ## Status
 
-Charts, values and Argo CD applications are written; Argo CD is not
-installed yet.
+Argo CD runs in `aks-cars` and keeps all eighteen applications synced:
+cert-manager, platform, the three stages and the twelve apps. All twelve
+URLs answer over HTTPS with certificates of Let's Encrypt.
 
 ## License
 
