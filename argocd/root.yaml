@@ -15,7 +15,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/rljson/cars-deployment.git
-    targetRevision: rework_cars_azure_infra
+    targetRevision: main
     path: argocd/apps
   destination:
     server: https://kubernetes.default.svc

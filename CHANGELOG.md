@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Argo CD follows `main`
 - Add the Helm charts `master`, `client` and `stage`, twelve values files
   `values/<side>-<service>-<stage>.yaml` and the stages `dev`, `test` and
   `prod`

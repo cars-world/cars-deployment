@@ -118,8 +118,9 @@ node promote.js dev test
 node promote.js test prod
 ```
 
-Argo CD folgt dem Branch, den `targetRevision` und `revision` jeder Datei
-in `argocd` nennen; `test.js` prüft, dass sie übereinstimmen.
+Argo CD folgt `main`, genannt in `targetRevision` und `revision` jeder
+Datei in `argocd`; `test.js` prüft, dass sie übereinstimmen. Ein Merge in
+`main` rollt aus; Argo CD löscht, was aus `main` verschwindet.
 
 ## Test
 

@@ -116,8 +116,9 @@ node promote.js dev test
 node promote.js test prod
 ```
 
-Argo CD follows the branch named in `targetRevision` and `revision` of
-every file in `argocd`; `test.js` checks they agree.
+Argo CD follows `main`, named in `targetRevision` and `revision` of
+every file in `argocd`; `test.js` checks they agree. A merge into `main`
+deploys; Argo CD deletes what disappears from `main`.
 
 ## Test
 
