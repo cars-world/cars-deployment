@@ -47,24 +47,27 @@ flowchart LR
   root --> pf["platform"]
   root --> st["ApplicationSet stages<br/>stage-dev, -test, -prod"]
   root --> ap["ApplicationSet apps<br/>twelve apps"]
-  st --> gw["gateway cars-&lt;stage&gt;<br/>namespaces cars-&lt;side&gt;-&lt;stage&gt;"]
+  st --> gw["gateways cars-&lt;side&gt;-&lt;stage&gt;<br/>namespaces cars-&lt;side&gt;-&lt;stage&gt;"]
   ap --> pods["master and client<br/>per side and stage"]
 ```
 
-Each stage has a gateway in the namespace `cars-gateway` whose public IP
-carries the free Azure name
-`cars-<stage>.germanywestcentral.cloudapp.azure.com`. Every app is
-reached by its path, which the gateway strips:
+Each side of a stage has a gateway in the namespace `cars-gateway` whose
+public IP carries the free Azure name
+`cars-<side>-<stage>.germanywestcentral.cloudapp.azure.com`, six in all.
+The client answers at `/` of its host, the master under `/api` of the
+same host:
 
-| App                     | URL in `dev`                                                          |
-| ----------------------- | --------------------------------------------------------------------- |
-| origin master           | `https://cars-dev.germanywestcentral.cloudapp.azure.com/origin-master/` |
-| origin client           | `https://cars-dev.germanywestcentral.cloudapp.azure.com/origin-client/` |
-| custom master           | `https://cars-dev.germanywestcentral.cloudapp.azure.com/custom-master/` |
-| custom client           | `https://cars-dev.germanywestcentral.cloudapp.azure.com/custom-client/` |
+| App           | URL in `dev`                                                        |
+| ------------- | ------------------------------------------------------------------- |
+| origin client | `https://cars-origin-dev.germanywestcentral.cloudapp.azure.com/`    |
+| origin master | `https://cars-origin-dev.germanywestcentral.cloudapp.azure.com/api/hello` |
+| custom client | `https://cars-custom-dev.germanywestcentral.cloudapp.azure.com/`    |
+| custom master | `https://cars-custom-dev.germanywestcentral.cloudapp.azure.com/api/hello` |
 
-A path without its slash is redirected to it, http to https. The pods of
-a side run on its node pool. Traffic into a namespace comes only from the
+http is redirected to https. A gateway accepts the routes of its own
+namespace only. The add-on runs two pods per gateway;
+`gatewayResources` in `charts/stage/values.yaml` sets their requests. The
+pods of a side run on its node pool. Traffic into a namespace comes only from the
 same namespace and the gateways; the origin master also accepts the
 custom master of the same stage. cert-manager gets a certificate per
 gateway from Let's Encrypt; `issuer` in `charts/stage/values.yaml`

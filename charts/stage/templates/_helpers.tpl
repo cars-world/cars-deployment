@@ -12,6 +12,3 @@ found in the LICENSE file in the root of this package.
 {{- end }}
 {{- end }}
 
-{{- define "stage.host" -}}
-cars-{{ .Values.stage }}.{{ .Values.region }}.cloudapp.azure.com
-{{- end }}

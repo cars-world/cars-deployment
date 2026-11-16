@@ -7,9 +7,12 @@
   `prod`
 - Each stage gets the namespaces `cars-origin-<stage>` and
   `cars-custom-<stage>` with quotas and network policies, and a gateway
-  with the free Azure name
-  `cars-<stage>.germanywestcentral.cloudapp.azure.com` that reaches each
-  app by its path
+  per side with the free Azure name
+  `cars-<side>-<stage>.germanywestcentral.cloudapp.azure.com`: the client
+  at `/`, the master under `/api`
+- The gateway pods request 25m and 64Mi, set by `gatewayResources`
+- `test.js` checks that every app attaches to a gateway of its stage with
+  that gateway's host
 - Add cert-manager with Let's Encrypt and the Argo CD applications: a
   root application and the ApplicationSets `stages` and `apps`
 - Add the Node.js scripts `bootstrap.js`, `promote.js` and `test.js` with

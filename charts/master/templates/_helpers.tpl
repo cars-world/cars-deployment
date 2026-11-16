@@ -24,9 +24,14 @@ found in the LICENSE file in the root of this package.
 {{ .Values.side }}-{{ .Chart.Name }}
 {{- end }}
 
-{{/* The free Azure name of the gateway of the stage */}}
+{{/* The gateway of the side and stage, cars-origin-dev, … */}}
+{{- define "app.gateway" -}}
+cars-{{ .Values.side }}-{{ .Values.stage }}
+{{- end }}
+
+{{/* The free Azure name of that gateway */}}
 {{- define "app.host" -}}
-cars-{{ .Values.stage }}.{{ .Values.region }}.cloudapp.azure.com
+{{ include "app.gateway" . }}.{{ .Values.region }}.cloudapp.azure.com
 {{- end }}
 
 {{- define "app.labels" -}}

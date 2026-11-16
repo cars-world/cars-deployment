@@ -4,65 +4,71 @@
 # Use of this source code is governed by terms that can be
 # found in the LICENSE file in the root of this package.
 
-# The gateway of the stage, a public load balancer whose IP carries the
-# free Azure name cars-<stage>.<region>.cloudapp.azure.com. cert-manager
-# fills the secret of the https listener. http only redirects to https
-# and answers the challenges of Let's Encrypt; https accepts the routes
-# of the namespaces of this stage.
+# One gateway per side of the stage, a public load balancer whose IP
+# carries the free Azure name cars-<side>-<stage>.<region>.cloudapp.azure.com.
+# cert-manager fills the secret of the https listener. http only redirects
+# to https and answers the challenges of Let's Encrypt; https accepts the
+# routes of the namespace of this side and stage only.
 {{- include "stage.check" . }}
+{{- range $side := list "origin" "custom" }}
+{{- $name := printf "cars-%s-%s" $side $.Values.stage }}
+{{- $host := printf "%s.%s.cloudapp.azure.com" $name $.Values.region }}
+---
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: cars-{{ .Values.stage }}
-  namespace: {{ .Values.gatewayNamespace }}
+  name: {{ $name }}
+  namespace: {{ $.Values.gatewayNamespace }}
   annotations:
-    cert-manager.io/cluster-issuer: {{ .Values.issuer }}
+    cert-manager.io/cluster-issuer: {{ $.Values.issuer }}
 spec:
-  gatewayClassName: {{ .Values.gatewayClassName }}
+  gatewayClassName: {{ $.Values.gatewayClassName }}
   infrastructure:
     parametersRef:
       group: ""
       kind: ConfigMap
-      name: cars-{{ .Values.stage }}-gateway-options
+      name: cars-{{ $.Values.stage }}-gateway-options
     annotations:
-      service.beta.kubernetes.io/azure-dns-label-name: cars-{{ .Values.stage }}
+      service.beta.kubernetes.io/azure-dns-label-name: {{ $name }}
   listeners:
     - name: http
       protocol: HTTP
       port: 80
-      hostname: {{ include "stage.host" . }}
+      hostname: {{ $host }}
       allowedRoutes:
         namespaces:
           from: Same
     - name: https
       protocol: HTTPS
       port: 443
-      hostname: {{ include "stage.host" . }}
+      hostname: {{ $host }}
       tls:
         mode: Terminate
         certificateRefs:
-          - name: cars-{{ .Values.stage }}-tls
+          - name: {{ $name }}-tls
       allowedRoutes:
         namespaces:
           from: Selector
           selector:
             matchLabels:
-              cars-stage: {{ .Values.stage }}
+              cars-side: {{ $side }}
+              cars-stage: {{ $.Values.stage }}
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: cars-{{ .Values.stage }}-to-https
-  namespace: {{ .Values.gatewayNamespace }}
+  name: {{ $name }}-to-https
+  namespace: {{ $.Values.gatewayNamespace }}
 spec:
   parentRefs:
-    - name: cars-{{ .Values.stage }}
+    - name: {{ $name }}
       sectionName: http
   hostnames:
-    - {{ include "stage.host" . }}
+    - {{ $host }}
   rules:
     - filters:
         - type: RequestRedirect
           requestRedirect:
             scheme: https
             statusCode: 301
+{{- end }}

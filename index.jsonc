@@ -15,7 +15,7 @@
   "domain": [
     "Helm charts master, client and stage; values/<side>-<service>-<stage>.yaml; namespaces cars-<side>-<stage> with quotas and network policies",
     "Argo CD with a root application and ApplicationSets; promotion dev → test → prod as a commit",
-    "Gateway API on approuting-istio, free Azure names cars-<stage>.germanywestcentral.cloudapp.azure.com, cert-manager with Let's Encrypt"
+    "Gateway API on approuting-istio, one gateway per side and stage, free Azure names cars-<side>-<stage>.germanywestcentral.cloudapp.azure.com, client at /, master at /api, cert-manager with Let's Encrypt"
   ],
 
   // The repos this one depends on and the repos depending on it.

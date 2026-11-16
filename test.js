@@ -18,7 +18,7 @@ import { dirname } from 'node:path';
 import { chdir } from 'node:process';
 import { fileURLToPath } from 'node:url';
 
-import { appNames, argoRevisions, STAGES } from './lib/common.js';
+import { appNames, argoRevisions, gatewayHosts, routeParents, STAGES } from './lib/common.js';
 
 chdir(dirname(fileURLToPath(import.meta.url)));
 
@@ -62,6 +62,19 @@ for (const stage of STAGES) {
   check(
     quiet('helm', ['template', stage, 'charts/stage', '-f', `stages/${stage}.yaml`]),
     `renders the stage ${stage}`,
+  );
+}
+
+// Each app attaches to a Gateway its stage renders, with that Gateway's host
+const render = (args) => spawnSync('helm', ['template', ...args], { encoding: 'utf8' }).stdout ?? '';
+for (const app of appNames()) {
+  const stage = app.split('-')[2];
+  const hosts = gatewayHosts(render([stage, 'charts/stage', '-f', `stages/${stage}.yaml`]));
+  const service = app.split('-')[1];
+  const parents = routeParents(render([app, `charts/${service}`, '-f', `values/${app}.yaml`]));
+  check(
+    parents.length > 0 && parents.every((p) => hosts.get(p.gateway) === p.host),
+    `${app} attaches to ${parents.map((p) => p.host).join(', ')}`,
   );
 }
 

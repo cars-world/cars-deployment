@@ -4,10 +4,8 @@
 # Use of this source code is governed by terms that can be
 # found in the LICENSE file in the root of this package.
 
-# https://<host>/<side>-<service>/… reaches this service without the
-# prefix; /<side>-<service> without the slash is redirected to it, so the
-# relative URLs of a page resolve below the prefix.
-{{- $prefix := printf "/%s" (include "app.name" .) }}
+# https://<host>/api/… reaches the master unchanged; the client of the
+# same host calls it there, so the session cookie stays on one host.
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -16,7 +14,7 @@ metadata:
     {{- include "app.labels" . | nindent 4 }}
 spec:
   parentRefs:
-    - name: cars-{{ .Values.stage }}
+    - name: {{ include "app.gateway" . }}
       namespace: {{ .Values.gatewayNamespace }}
       sectionName: https
   hostnames:
@@ -24,25 +22,8 @@ spec:
   rules:
     - matches:
         - path:
-            type: Exact
-            value: {{ $prefix }}
-      filters:
-        - type: RequestRedirect
-          requestRedirect:
-            path:
-              type: ReplaceFullPath
-              replaceFullPath: {{ $prefix }}/
-            statusCode: 301
-    - matches:
-        - path:
             type: PathPrefix
-            value: {{ $prefix }}/
-      filters:
-        - type: URLRewrite
-          urlRewrite:
-            path:
-              type: ReplacePrefixMatch
-              replacePrefixMatch: /
+            value: /api
       backendRefs:
         - name: {{ .Chart.Name }}
           port: 80

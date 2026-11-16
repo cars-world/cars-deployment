@@ -47,24 +47,27 @@ flowchart LR
   root --> pf["platform"]
   root --> st["ApplicationSet stages<br/>stage-dev, -test, -prod"]
   root --> ap["ApplicationSet apps<br/>zwölf Apps"]
-  st --> gw["Gateway cars-&lt;stage&gt;<br/>Namespaces cars-&lt;side&gt;-&lt;stage&gt;"]
+  st --> gw["Gateways cars-&lt;side&gt;-&lt;stage&gt;<br/>Namespaces cars-&lt;side&gt;-&lt;stage&gt;"]
   ap --> pods["Master und Client<br/>je Seite und Stufe"]
 ```
 
-Jede Stufe hat ein Gateway im Namespace `cars-gateway`, dessen
-öffentliche IP den kostenlosen Azure-Namen
-`cars-<stage>.germanywestcentral.cloudapp.azure.com` trägt. Jede App wird
-über ihren Pfad erreicht, den das Gateway entfernt:
+Jede Seite einer Stufe hat ein Gateway im Namespace `cars-gateway`,
+dessen öffentliche IP den kostenlosen Azure-Namen
+`cars-<side>-<stage>.germanywestcentral.cloudapp.azure.com` trägt, sechs
+insgesamt. Der Client antwortet unter `/` seines Hosts, der Master unter
+`/api` desselben Hosts:
 
-| App                     | URL in `dev`                                                          |
-| ----------------------- | --------------------------------------------------------------------- |
-| origin master           | `https://cars-dev.germanywestcentral.cloudapp.azure.com/origin-master/` |
-| origin client           | `https://cars-dev.germanywestcentral.cloudapp.azure.com/origin-client/` |
-| custom master           | `https://cars-dev.germanywestcentral.cloudapp.azure.com/custom-master/` |
-| custom client           | `https://cars-dev.germanywestcentral.cloudapp.azure.com/custom-client/` |
+| App           | URL in `dev`                                                        |
+| ------------- | ------------------------------------------------------------------- |
+| origin client | `https://cars-origin-dev.germanywestcentral.cloudapp.azure.com/`    |
+| origin master | `https://cars-origin-dev.germanywestcentral.cloudapp.azure.com/api/hello` |
+| custom client | `https://cars-custom-dev.germanywestcentral.cloudapp.azure.com/`    |
+| custom master | `https://cars-custom-dev.germanywestcentral.cloudapp.azure.com/api/hello` |
 
-Ein Pfad ohne Schrägstrich wird auf ihn umgeleitet, http auf https. Die
-Pods einer Seite laufen auf ihrem Node Pool. Verkehr in einen Namespace
+http wird auf https umgeleitet. Ein Gateway nimmt nur die Routen seines
+eigenen Namespaces an. Das Add-on betreibt zwei Pods je Gateway;
+`gatewayResources` in `charts/stage/values.yaml` setzt ihre Anforderungen.
+Die Pods einer Seite laufen auf ihrem Node Pool. Verkehr in einen Namespace
 kommt nur aus demselben Namespace und von den Gateways; der origin
 master nimmt zusätzlich den custom master derselben Stufe an.
 cert-manager holt je Gateway ein Zertifikat von Let's Encrypt; `issuer`
