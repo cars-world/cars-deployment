@@ -1,0 +1,170 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# Promotes a stage to the next as a pull request, started by hand in the
+# tab Actions:
+#
+#   1. promote.js copies the image tags of <from> into the values of <to>
+#      on a branch of its own
+#   2. Trivy scans the images <to> will run; the result becomes the status
+#      check scan of the branch, which the rule on main requires
+#   3. the pull request opens; Argo CD syncs <to> after the merge
+#
+# A pull request opened with GITHUB_TOKEN starts no other workflow, so the
+# scan runs here and reports its status itself. The rule on main asks for
+# a review of the code owner when values/*-prod.yaml changes.
+
+name: Promote
+
+on:
+  workflow_dispatch:
+    inputs:
+      from:
+        description: Promote this stage to the next
+        required: true
+        type: choice
+        options: [dev, test]
+
+permissions:
+  contents: write
+  pull-requests: write
+  statuses: write
+  id-token: write
+
+concurrency:
+  group: promote
+  cancel-in-progress: false
+
+env:
+  REGISTRY: crcars
+  # High and critical findings that have a fix fail the scan
+  TRIVY_IMAGE: aquasec/trivy:0.58.1
+  TRIVY_SEVERITY: HIGH,CRITICAL
+
+jobs:
+  promote:
+    name: Promote ${{ inputs.from }}
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22.x
+
+      - name: Commit the promotion on a branch
+        id: promote
+        env:
+          FROM: ${{ inputs.from }}
+        run: |
+          case "$FROM" in
+            dev) to=test ;;
+            test) to=prod ;;
+          esac
+          branch="promote-${FROM}-${to}-${GITHUB_RUN_NUMBER}"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "$branch"
+          before=$(git rev-parse HEAD)
+          node promote.js "$FROM" "$to"
+          echo "to=${to}" >> "$GITHUB_OUTPUT"
+          echo "branch=${branch}" >> "$GITHUB_OUTPUT"
+          if [ "$(git rev-parse HEAD)" = "$before" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git log -1 --format=%b > "$RUNNER_TEMP/details.txt"
+          fi
+
+      - name: Push the branch
+        if: steps.promote.outputs.changed == 'true'
+        env:
+          BRANCH: ${{ steps.promote.outputs.branch }}
+        run: git push origin "$BRANCH"
+
+      - name: Sign in to Azure to pull the images
+        if: steps.promote.outputs.changed == 'true'
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID_SCAN }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Scan the images of ${{ steps.promote.outputs.to }}
+        id: scan
+        if: steps.promote.outputs.changed == 'true'
+        env:
+          TO: ${{ steps.promote.outputs.to }}
+        run: |
+          az acr login --name "$REGISTRY"
+          failed=0
+          : > "$RUNNER_TEMP/scan.md"
+          for image in $(node images.js "$TO"); do
+            docker pull --quiet "$image"
+            if docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                "$TRIVY_IMAGE" image --quiet --exit-code 1 --ignore-unfixed \
+                --severity "$TRIVY_SEVERITY" --format table "$image" \
+                > "$RUNNER_TEMP/trivy.txt" 2>&1; then
+              echo "- ✅ \`${image}\`" >> "$RUNNER_TEMP/scan.md"
+            else
+              failed=1
+              echo "- ❌ \`${image}\`: findings ${TRIVY_SEVERITY} with a fix" >> "$RUNNER_TEMP/scan.md"
+              cat "$RUNNER_TEMP/trivy.txt"
+            fi
+          done
+          cat "$RUNNER_TEMP/scan.md" >> "$GITHUB_STEP_SUMMARY"
+          echo "failed=${failed}" >> "$GITHUB_OUTPUT"
+
+      - name: Report the scan and open the pull request
+        # Also when the scan step failed: the pull request then shows it
+        if: always() && steps.promote.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FROM: ${{ inputs.from }}
+          TO: ${{ steps.promote.outputs.to }}
+          BRANCH: ${{ steps.promote.outputs.branch }}
+          FAILED: ${{ steps.scan.outputs.failed || '1' }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          sha=$(git rev-parse HEAD)
+          if [ "$FAILED" = "0" ]; then
+            state=success; description="No high or critical findings with a fix"
+          else
+            state=failure; description="Findings or a failed scan; see the run"
+          fi
+          gh api "repos/${GITHUB_REPOSITORY}/statuses/${sha}" \
+            -f state="$state" -f context=scan \
+            -f description="$description" -f target_url="$RUN_URL"
+          {
+            echo "Promotes \`${FROM}\` to \`${TO}\`."
+            echo
+            echo '```'
+            cat "$RUNNER_TEMP/details.txt"
+            echo '```'
+            echo
+            echo "Scan of the images \`${TO}\` will run:"
+            echo
+            cat "$RUNNER_TEMP/scan.md" 2>/dev/null || echo "- the scan did not run"
+            echo
+            if [ "$TO" = "prod" ]; then
+              echo "Needs the review of the code owner before the merge."
+            fi
+            echo "Argo CD syncs \`${TO}\` after the merge. [Run](${RUN_URL})"
+          } > "$RUNNER_TEMP/body.md"
+          gh pr create --base main --head "$BRANCH" \
+            --title "Promote ${FROM} to ${TO}" --body-file "$RUNNER_TEMP/body.md"
+          [ "$state" = success ]
+
+      - name: Nothing to promote
+        if: steps.promote.outputs.changed == 'false'
+        env:
+          FROM: ${{ inputs.from }}
+          TO: ${{ steps.promote.outputs.to }}
+        run: echo "${TO} already runs the tags of ${FROM}" >> "$GITHUB_STEP_SUMMARY"

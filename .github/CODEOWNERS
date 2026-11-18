@@ -1,0 +1,9 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# A change of what runs in prod needs the review of its code owner; the
+# ruleset main.json requires it. dev and test need no review.
+/values/*-prod.yaml @BenNajafloo

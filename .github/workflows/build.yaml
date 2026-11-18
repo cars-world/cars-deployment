@@ -1,0 +1,153 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# Builds the image of an app and deploys it to dev. Called by the repo of
+# the app on a push to main:
+#
+#   1. tests the app with pnpm test
+#   2. signs in to Azure through OIDC, without a stored secret
+#   3. builds the image and pushes it to crcars as
+#      cars-<app>:<version>-<short commit>
+#   4. reads the private key of the GitHub App cars-deploy from
+#      kv-cars-github and gets a token that may write to this repo only
+#   5. sets the tag in values/<app>-dev.yaml with set-tag.js and pushes the
+#      commit to main; Argo CD syncs dev
+#
+# The caller needs the permissions id-token: write and contents: read and
+# the variables AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID and
+# CARS_DEPLOY_APP_ID.
+
+name: Build and deploy to dev
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: The app as <side>-<service>, e.g. origin-master
+        required: true
+        type: string
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: crcars
+  KEY_VAULT: kv-cars-github
+  APP_KEY_SECRET: cars-deploy-private-key
+
+jobs:
+  build:
+    name: Build ${{ inputs.app }} and deploy to dev
+    runs-on: ubuntu-latest
+    # One deploy per app at a time; a newer push waits for the running one
+    concurrency:
+      group: build-${{ inputs.app }}
+      cancel-in-progress: false
+
+    steps:
+      - name: Check out the app
+        uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22.x
+          cache: pnpm
+
+      - name: Test
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm test
+
+      - name: Name the image
+        id: image
+        env:
+          APP: ${{ inputs.app }}
+        run: |
+          case "$APP" in
+            origin-master | origin-client | custom-master | custom-client) ;;
+            *) echo "Unknown app '${APP}'" >&2; exit 1 ;;
+          esac
+          version=$(node -p "require('./package.json').version")
+          tag="${version}-${GITHUB_SHA::7}"
+          echo "tag=${tag}" >> "$GITHUB_OUTPUT"
+          echo "ref=${REGISTRY}.azurecr.io/cars-${APP}:${tag}" >> "$GITHUB_OUTPUT"
+          echo "Image: ${REGISTRY}.azurecr.io/cars-${APP}:${tag}"
+
+      - name: Sign in to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Build and push the image
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
+        run: |
+          az acr login --name "$REGISTRY"
+          docker build --tag "$IMAGE" .
+          docker push "$IMAGE"
+
+      - name: Read the key of the GitHub App
+        id: key
+        run: |
+          key=$(az keyvault secret show --vault-name "$KEY_VAULT" \
+            --name "$APP_KEY_SECRET" --query value -o tsv)
+          while IFS= read -r line; do echo "::add-mask::${line}"; done <<< "$key"
+          {
+            echo 'pem<<PEM_END'
+            echo "$key"
+            echo 'PEM_END'
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Get a token of the GitHub App
+        id: app
+        uses: actions/create-github-app-token@v2
+        with:
+          app-id: ${{ vars.CARS_DEPLOY_APP_ID }}
+          private-key: ${{ steps.key.outputs.pem }}
+          owner: cars-world
+          repositories: cars-deployment
+
+      - name: Check out cars-deployment
+        uses: actions/checkout@v5
+        with:
+          repository: cars-world/cars-deployment
+          ref: main
+          path: cars-deployment
+          token: ${{ steps.app.outputs.token }}
+
+      - name: Set the tag of dev and push
+        working-directory: cars-deployment
+        env:
+          APP: ${{ inputs.app }}
+          TAG: ${{ steps.image.outputs.tag }}
+          SOURCE: ${{ github.repository }}@${{ github.sha }}
+        run: |
+          git config user.name 'cars-deploy[bot]'
+          git config user.email 'cars-deploy[bot]@users.noreply.github.com'
+          node set-tag.js "$APP" dev "$TAG"
+          if git diff --quiet; then
+            echo "dev already runs ${TAG}"
+            exit 0
+          fi
+          git commit -am "Deploy ${APP} ${TAG} to dev" -m "Built from ${SOURCE}"
+          # Another app may have pushed meanwhile: rebase and try again
+          for attempt in 1 2 3 4 5; do
+            git push origin HEAD:main && exit 0
+            sleep $((attempt * 5))
+            git pull --rebase origin main
+          done
+          echo "Could not push the tag after 5 attempts" >&2
+          exit 1

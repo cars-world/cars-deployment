@@ -38,6 +38,12 @@ synchron halten.
 | `bootstrap.js`     | Installiert Argo CD und übergibt ihm die Root-Anwendung                             |
 | `promote.js`       | Kopiert die Image-Tags einer Stufe als Commit in die nächste                        |
 | `set-password.js`  | Setzt das Passwort eines persönlichen Argo-CD-Kontos                                |
+| `set-tag.js`       | Setzt den Image-Tag einer App in einer Stufe, ohne zu committen                     |
+| `.github/workflows/build.yaml` | Wiederverwendbarer Workflow: testet eine App, baut ihr Image nach `crcars`, rollt es nach `dev` aus |
+| `.github/workflows/promote.yaml` | Befördert eine Stufe als Pull Request in die nächste, mit einem Trivy-Scan als Check `scan` |
+| `.github/rulesets/main.json` | Die Regel auf `main`: Pull Requests, der Check `scan`, ein Review des Code Owners für `prod` |
+| `.github/CODEOWNERS` | Der Reviewer von `values/*-prod.yaml`                                               |
+| `images.js`        | Listet die Images der vier Apps einer Stufe                                         |
 | `test.js`          | Prüft die Charts und rendert alle zwölf Apps und drei Stufen                        |
 
 ```mermaid
@@ -109,13 +115,60 @@ Ein Konto hinzufügen: es in `configs.cm` und `configs.rbac` von
 `argocd/values.yaml` eintragen, `node bootstrap.js` ausführen, dann
 `node set-password.js <account>`.
 
-Eine App ändern: ihre Value-Datei bearbeiten, committen und pushen; Argo
-CD synchronisiert sie. Eine Stufe in die nächste befördern, dann pushen
-und einen Pull Request öffnen:
+Eine App ändern: ihre Value-Datei bearbeiten und einen Pull Request
+öffnen; Argo CD synchronisiert sie nach dem Merge.
+
+Eine Stufe in die nächste befördern im Reiter **Actions → Promote → Run
+workflow**, mit `dev` oder `test`. Der Workflow committet die Beförderung
+auf einem eigenen Branch, scannt die Images der nächsten Stufe mit Trivy,
+meldet das Ergebnis als Check `scan` und öffnet den Pull Request. Ein
+Befund der Schwere hoch oder kritisch, für den es einen Fix gibt, lässt
+den Check scheitern. `test` wird ohne Review gemergt, `prod` braucht das
+Review seines Code Owners. Dasselbe von Hand, dann den Branch pushen und
+einen Pull Request öffnen:
 
 ```bash
 node promote.js dev test
 node promote.js test prod
+```
+
+Die Regel auf `main` steht in `.github/rulesets/main.json`: Änderungen
+laufen über Pull Requests mit bestandenem `scan`; die GitHub App
+`cars-deploy` und die Owner der Organisation dürfen sie umgehen. Einmal
+anwenden, und nach einer Änderung erneut:
+
+```bash
+gh api -X POST repos/cars-world/cars-deployment/rulesets --input .github/rulesets/main.json
+```
+
+Eine App aus ihrem eigenen Repo nach `dev` ausrollen: bei einem Push auf
+`main` ruft es den wiederverwendbaren Workflow `build` auf, der die App
+testet, das Image `crcars.azurecr.io/cars-<app>:<version>-<kurzer Commit>`
+baut, den Tag mit `set-tag.js` in `values/<app>-dev.yaml` schreibt und
+auf `main` pusht. Er meldet sich über OIDC bei Azure an und schreibt hier
+mit einem Token der GitHub App `cars-deploy`, deren Schlüssel in
+`kv-cars-github` liegt; in GitHub ist kein Secret gespeichert. Der
+Aufrufer braucht die Variablen `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
+`AZURE_SUBSCRIPTION_ID` und `CARS_DEPLOY_APP_ID`:
+
+```yaml
+on:
+  push:
+    branches: ['main']
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  deploy:
+    uses: cars-world/cars-deployment/.github/workflows/build.yaml@main
+    with:
+      app: origin-master
+```
+
+Einen Tag von Hand setzen:
+
+```bash
+node set-tag.js origin-master dev 0.1.0-ab12cd3
 ```
 
 Argo CD folgt `main`, genannt in `targetRevision` und `revision` jeder
@@ -132,7 +185,7 @@ node test.js
 
 ## Grenzen
 
-- Keine CI: ein Betreiber baut die Images und ändert die Tags von Hand
+- Nur die Images werden gescannt, nicht die Charts
 - Die Oberfläche von Argo CD nur über Port-Forward, mit persönlichen
   Konten; die Anmeldung mit Entra folgt später
 - Der Cluster stoppt jeden Abend; mit `az aks start` starten

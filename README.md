@@ -38,6 +38,12 @@ this repo.
 | `bootstrap.js`     | Installs Argo CD and hands it the root application                               |
 | `promote.js`       | Copies the image tags of one stage into the next, as a commit                    |
 | `set-password.js`  | Sets the password of a personal Argo CD account                                  |
+| `set-tag.js`       | Sets the image tag of one app in one stage, without committing                   |
+| `.github/workflows/build.yaml` | Reusable workflow: tests an app, builds its image into `crcars`, deploys it to `dev` |
+| `.github/workflows/promote.yaml` | Promotes a stage to the next as a pull request, with a Trivy scan as the check `scan` |
+| `.github/rulesets/main.json` | The rule on `main`: pull requests, the check `scan`, a code owner review for `prod` |
+| `.github/CODEOWNERS` | The reviewer of `values/*-prod.yaml`                                            |
+| `images.js`        | Lists the images of the four apps of a stage                                     |
 | `test.js`          | Lints the charts and renders all twelve apps and three stages                    |
 
 ```mermaid
@@ -108,12 +114,58 @@ Add an account: list it in `configs.cm` and `configs.rbac` of
 `argocd/values.yaml`, run `node bootstrap.js`, then
 `node set-password.js <account>`.
 
-Change an app: edit its values file, commit and push; Argo CD syncs it.
-Promote a stage to the next, then push and open a pull request:
+Change an app: edit its values file and open a pull request; Argo CD syncs
+it after the merge.
+
+Promote a stage to the next in the tab **Actions → Promote → Run
+workflow**, with `dev` or `test`. The workflow commits the promotion on a
+branch, scans the images the next stage will run with Trivy, reports the
+result as the check `scan` and opens the pull request. A finding of
+severity high or critical that has a fix fails the check. `test` merges
+without a review, `prod` needs the review of its code owner. The same by
+hand, then push the branch and open a pull request:
 
 ```bash
 node promote.js dev test
 node promote.js test prod
+```
+
+The rule on `main` lives in `.github/rulesets/main.json`: changes go
+through pull requests with a passing `scan`; the GitHub App `cars-deploy`
+and the owners of the organization may bypass it. Apply it once, and again
+after a change:
+
+```bash
+gh api -X POST repos/cars-world/cars-deployment/rulesets --input .github/rulesets/main.json
+```
+
+Deploy an app to `dev` from its own repo: on a push to `main` it calls the
+reusable workflow `build`, which tests the app, builds the image
+`crcars.azurecr.io/cars-<app>:<version>-<short commit>`, writes the tag
+into `values/<app>-dev.yaml` with `set-tag.js` and pushes it to `main`.
+It signs in to Azure through OIDC and writes here with a token of the
+GitHub App `cars-deploy`, whose key lies in `kv-cars-github`; no secret is
+stored in GitHub. The caller needs the variables `AZURE_CLIENT_ID`,
+`AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` and `CARS_DEPLOY_APP_ID`:
+
+```yaml
+on:
+  push:
+    branches: ['main']
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  deploy:
+    uses: cars-world/cars-deployment/.github/workflows/build.yaml@main
+    with:
+      app: origin-master
+```
+
+Set a tag by hand:
+
+```bash
+node set-tag.js origin-master dev 0.1.0-ab12cd3
 ```
 
 Argo CD follows `main`, named in `targetRevision` and `revision` of
@@ -130,7 +182,7 @@ node test.js
 
 ## Limitations
 
-- No CI: an operator builds the images and edits the tags by hand
+- Only the images are scanned, not the charts
 - The UI of Argo CD only through port-forward, with personal accounts;
   sign-in with Entra comes later
 - The cluster stops every evening; start it with `az aks start`

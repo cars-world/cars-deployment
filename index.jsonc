@@ -9,12 +9,13 @@
   "name": "cars-deployment",
 
   // 1-2 sentence summary about this repo.
-  "summary": "What runs in the Kubernetes cluster aks-cars of the cars application: Helm charts of the masters, clients and stages, twelve values files, Argo CD applications, and the Node.js scripts bootstrap.js, promote.js, set-password.js and test.js.",
+  "summary": "What runs in the Kubernetes cluster aks-cars of the cars application: Helm charts of the masters, clients and stages, twelve values files, Argo CD applications, the Node.js scripts bootstrap.js, promote.js, set-password.js, set-tag.js, images.js and test.js, the reusable workflow build that deploys an app to dev, and the workflow promote with a Trivy scan.",
 
   // 1-3 bullet points: the problem space.
   "domain": [
     "Helm charts master, client and stage; values/<side>-<service>-<stage>.yaml; namespaces cars-<side>-<stage> with quotas and network policies",
-    "Argo CD with a root application and ApplicationSets; promotion dev → test → prod as a commit",
+    "Argo CD with a root application and ApplicationSets; promotion dev → test → prod as a pull request of the workflow promote, Trivy scan as the check scan, code owner review for prod, ruleset of main",
+    "Reusable GitHub Actions workflow build: pnpm test, docker build and push to crcars through OIDC, image tag into values/<app>-dev.yaml with a token of the GitHub App cars-deploy",
     "Gateway API on approuting-istio, one gateway per side and stage, free Azure names cars-<side>-<stage>.germanywestcentral.cloudapp.azure.com, client at /, master at /api, cert-manager with Let's Encrypt"
   ],
 
@@ -27,6 +28,11 @@
     },
 
     // "<repo-b>": "why / API"
-    "usedBy": {}
+    "usedBy": {
+      "cars-origin-master": "the reusable workflow build, app origin-master",
+      "cars-origin-client": "the reusable workflow build, app origin-client",
+      "cars-custom-master": "the reusable workflow build, app custom-master",
+      "cars-custom-client": "the reusable workflow build, app custom-client"
+    }
   }
 }

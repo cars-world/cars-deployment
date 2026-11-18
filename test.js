@@ -13,7 +13,7 @@
 //   node test.js
 
 import { spawnSync } from 'node:child_process';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { chdir } from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -83,6 +83,18 @@ const distinct = [...new Set(revisions.map((r) => r.revision))];
 check(
   revisions.length > 0 && distinct.length === 1,
   `Argo CD follows one revision: ${distinct.join(', ')}`,
+);
+
+const ruleset = JSON.parse(readFileSync('.github/rulesets/main.json', 'utf8'));
+const rule = (type) => ruleset.rules.find((r) => r.type === type)?.parameters;
+check(
+  rule('required_status_checks')?.required_status_checks.some((c) => c.context === 'scan') &&
+    rule('pull_request')?.require_code_owner_review === true,
+  'The ruleset of main requires the check scan and the review of the code owner',
+);
+check(
+  /^\/values\/\*-prod\.yaml +@\S+/m.test(readFileSync('.github/CODEOWNERS', 'utf8')),
+  'CODEOWNERS names an owner of the values of prod',
 );
 
 if (failed) {
