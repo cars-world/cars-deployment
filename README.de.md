@@ -21,7 +21,7 @@ synchron halten.
   nur durch einen Commit hier
 - Ein Argo CD bedient die Stufen `dev`, `test` und `prod`
 - Die Azure-Ressourcen liegen in
-  [cars-infra](https://github.com/rljson/cars-infra); eine Änderung an
+  [cars-infra](https://github.com/cars-world/cars-infra); eine Änderung an
   einem Image berührt sie nie
 
 ## Aufbau

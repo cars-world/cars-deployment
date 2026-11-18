@@ -14,7 +14,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/rljson/cars-deployment.git
+    repoURL: https://github.com/cars-world/cars-deployment.git
     targetRevision: main
     path: argocd/apps
   destination:

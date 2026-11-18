@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Move the repository to the GitHub organization `cars-world`: Argo CD
+  reads `https://github.com/cars-world/cars-deployment.git`; the package
+  is `@cars-world/cars-deployment`
 - Argo CD follows `main`
 - Add the Helm charts `master`, `client` and `stage`, twelve values files
   `values/<side>-<service>-<stage>.yaml` and the stages `dev`, `test` and

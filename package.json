@@ -1,5 +1,5 @@
 {
-  "name": "@rljson/cars-deployment",
+  "name": "@cars-world/cars-deployment",
   "version": "0.0.1",
   "description": "What runs in the Kubernetes cluster of the cars application: Helm charts, values per app and stage, Argo CD applications and Node.js scripts",
   "private": true,
@@ -7,6 +7,6 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/rljson/cars-deployment.git"
+    "url": "git+https://github.com/cars-world/cars-deployment.git"
   }
 }
