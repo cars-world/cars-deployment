@@ -16,7 +16,7 @@ spec:
   goTemplateOptions: [missingkey=error]
   generators:
     - git:
-        repoURL: https://github.com/rljson/cars-deployment.git
+        repoURL: https://github.com/cars-world/cars-deployment.git
         revision: main
         files:
           - path: values/*.yaml
@@ -28,7 +28,7 @@ spec:
     spec:
       project: default
       source:
-        repoURL: https://github.com/rljson/cars-deployment.git
+        repoURL: https://github.com/cars-world/cars-deployment.git
         targetRevision: main
         path: 'charts/{{ .service }}'
         helm:

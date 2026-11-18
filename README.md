@@ -21,7 +21,7 @@ this repo.
   a commit here
 - One Argo CD serves the stages `dev`, `test` and `prod`
 - The Azure resources live in
-  [cars-infra](https://github.com/rljson/cars-infra); a change to an image
+  [cars-infra](https://github.com/cars-world/cars-infra); a change to an image
   never touches them
 
 ## Layout
