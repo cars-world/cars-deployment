@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Add the workflow `promote`: it commits a promotion on a branch, scans
+  the images with Trivy, reports the check `scan` and opens the pull
+  request
+- Add the ruleset of `main` and `CODEOWNERS`: pull requests with a
+  passing `scan`, a code owner review for `prod`
+- Add `images.js`, which lists the images of a stage
 - Add the reusable workflow `build`: it tests an app, builds its image
   into `crcars` as `<version>-<short commit>`, signs in through OIDC and
   pushes the tag into the values of `dev` with a token of the GitHub App
