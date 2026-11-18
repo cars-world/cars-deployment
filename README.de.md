@@ -38,6 +38,8 @@ synchron halten.
 | `bootstrap.js`     | Installiert Argo CD und übergibt ihm die Root-Anwendung                             |
 | `promote.js`       | Kopiert die Image-Tags einer Stufe als Commit in die nächste                        |
 | `set-password.js`  | Setzt das Passwort eines persönlichen Argo-CD-Kontos                                |
+| `set-tag.js`       | Setzt den Image-Tag einer App in einer Stufe, ohne zu committen                     |
+| `.github/workflows/build.yaml` | Wiederverwendbarer Workflow: testet eine App, baut ihr Image nach `crcars`, rollt es nach `dev` aus |
 | `test.js`          | Prüft die Charts und rendert alle zwölf Apps und drei Stufen                        |
 
 ```mermaid
@@ -118,6 +120,36 @@ node promote.js dev test
 node promote.js test prod
 ```
 
+Eine App aus ihrem eigenen Repo nach `dev` ausrollen: bei einem Push auf
+`main` ruft es den wiederverwendbaren Workflow `build` auf, der die App
+testet, das Image `crcars.azurecr.io/cars-<app>:<version>-<kurzer Commit>`
+baut, den Tag mit `set-tag.js` in `values/<app>-dev.yaml` schreibt und
+auf `main` pusht. Er meldet sich über OIDC bei Azure an und schreibt hier
+mit einem Token der GitHub App `cars-deploy`, deren Schlüssel in
+`kv-cars-github` liegt; in GitHub ist kein Secret gespeichert. Der
+Aufrufer braucht die Variablen `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`,
+`AZURE_SUBSCRIPTION_ID` und `CARS_DEPLOY_APP_ID`:
+
+```yaml
+on:
+  push:
+    branches: ['main']
+permissions:
+  id-token: write
+  contents: read
+jobs:
+  deploy:
+    uses: cars-world/cars-deployment/.github/workflows/build.yaml@main
+    with:
+      app: origin-master
+```
+
+Einen Tag von Hand setzen:
+
+```bash
+node set-tag.js origin-master dev 0.1.0-ab12cd3
+```
+
 Argo CD folgt `main`, genannt in `targetRevision` und `revision` jeder
 Datei in `argocd`; `test.js` prüft, dass sie übereinstimmen. Ein Merge in
 `main` rollt aus; Argo CD löscht, was aus `main` verschwindet.
@@ -132,7 +164,7 @@ node test.js
 
 ## Grenzen
 
-- Keine CI: ein Betreiber baut die Images und ändert die Tags von Hand
+- `test` und `prod` werden noch von Hand mit `promote.js` befördert
 - Die Oberfläche von Argo CD nur über Port-Forward, mit persönlichen
   Konten; die Anmeldung mit Entra folgt später
 - Der Cluster stoppt jeden Abend; mit `az aks start` starten

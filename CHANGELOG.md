@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Add the reusable workflow `build`: it tests an app, builds its image
+  into `crcars` as `<version>-<short commit>`, signs in through OIDC and
+  pushes the tag into the values of `dev` with a token of the GitHub App
+  `cars-deploy`
+- Add `set-tag.js`, which sets the image tag of one app in one stage
 - Move the repository to the GitHub organization `cars-world`: Argo CD
   reads `https://github.com/cars-world/cars-deployment.git`; the package
   is `@cars-world/cars-deployment`
