@@ -10,4 +10,4 @@ side: origin
 service: client
 stage: dev
 image:
-  tag: 0.0.1
+  tag: 0.1.0-0907c27
