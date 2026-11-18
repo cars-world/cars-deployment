@@ -85,7 +85,9 @@ jobs:
 
       - name: Push the branch
         if: steps.promote.outputs.changed == 'true'
-        run: git push origin "${{ steps.promote.outputs.branch }}"
+        env:
+          BRANCH: ${{ steps.promote.outputs.branch }}
+        run: git push origin "$BRANCH"
 
       - name: Sign in to Azure to pull the images
         if: steps.promote.outputs.changed == 'true'
@@ -162,4 +164,7 @@ jobs:
 
       - name: Nothing to promote
         if: steps.promote.outputs.changed == 'false'
-        run: echo "${{ steps.promote.outputs.to }} already runs the tags of ${{ inputs.from }}" >> "$GITHUB_STEP_SUMMARY"
+        env:
+          FROM: ${{ inputs.from }}
+          TO: ${{ steps.promote.outputs.to }}
+        run: echo "${TO} already runs the tags of ${FROM}" >> "$GITHUB_STEP_SUMMARY"

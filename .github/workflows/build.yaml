@@ -71,12 +71,18 @@ jobs:
 
       - name: Name the image
         id: image
+        env:
+          APP: ${{ inputs.app }}
         run: |
+          case "$APP" in
+            origin-master | origin-client | custom-master | custom-client) ;;
+            *) echo "Unknown app '${APP}'" >&2; exit 1 ;;
+          esac
           version=$(node -p "require('./package.json').version")
           tag="${version}-${GITHUB_SHA::7}"
           echo "tag=${tag}" >> "$GITHUB_OUTPUT"
-          echo "ref=${REGISTRY}.azurecr.io/cars-${{ inputs.app }}:${tag}" >> "$GITHUB_OUTPUT"
-          echo "Image: ${REGISTRY}.azurecr.io/cars-${{ inputs.app }}:${tag}"
+          echo "ref=${REGISTRY}.azurecr.io/cars-${APP}:${tag}" >> "$GITHUB_OUTPUT"
+          echo "Image: ${REGISTRY}.azurecr.io/cars-${APP}:${tag}"
 
       - name: Sign in to Azure
         uses: azure/login@v2
@@ -86,10 +92,12 @@ jobs:
           subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Build and push the image
+        env:
+          IMAGE: ${{ steps.image.outputs.ref }}
         run: |
           az acr login --name "$REGISTRY"
-          docker build --tag "${{ steps.image.outputs.ref }}" .
-          docker push "${{ steps.image.outputs.ref }}"
+          docker build --tag "$IMAGE" .
+          docker push "$IMAGE"
 
       - name: Read the key of the GitHub App
         id: key
