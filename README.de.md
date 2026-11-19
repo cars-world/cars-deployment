@@ -41,6 +41,8 @@ synchron halten.
 | `set-tag.js`       | Setzt den Image-Tag einer App in einer Stufe, ohne zu committen                     |
 | `.github/workflows/build.yaml` | Wiederverwendbarer Workflow: testet eine App, baut ihr Image nach `crcars`, rollt es nach `dev` aus |
 | `.github/workflows/promote.yaml` | Befördert eine Stufe als Pull Request in die nächste, mit einem Trivy-Scan als Check `scan` |
+| `.github/workflows/scan.yaml` | Meldet den Check `scan` auf jedem Pull Request; scannt, wenn sich `test` oder `prod` ändern |
+| `scan-images.sh`   | Scannt Images von `crcars` mit Trivy; genutzt von `promote` und `scan`              |
 | `.github/rulesets/main.json` | Die Regel auf `main`: Pull Requests, der Check `scan`, ein Review des Code Owners für `prod` |
 | `.github/CODEOWNERS` | Der Reviewer von `values/*-prod.yaml`                                               |
 | `images.js`        | Listet die Images der vier Apps einer Stufe                                         |
@@ -131,6 +133,12 @@ einen Pull Request öffnen:
 node promote.js dev test
 node promote.js test prod
 ```
+
+Jeder andere Pull Request bekommt den Check `scan` vom Workflow `scan`:
+er besteht sofort, außer der Pull Request ändert die Werte von `test`
+oder `prod`, deren Images er dann scannt. Mit **Allow auto-merge** wird
+ein Pull Request von selbst gemergt, sobald `scan` besteht und, für
+`prod`, sein Code Owner zugestimmt hat.
 
 Die Regel auf `main` steht in `.github/rulesets/main.json`: Änderungen
 laufen über Pull Requests mit bestandenem `scan`; die GitHub App

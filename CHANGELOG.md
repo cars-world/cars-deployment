@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Add the workflow `scan`: every pull request into `main` gets the check
+  `scan`; it scans the images when the values of `test` or `prod` change
+- Move the Trivy scan into `scan-images.sh`, used by `promote` and `scan`
 - `.trivyignore`: the workflow `promote` accepts listed findings until
   their date `exp`; the six nginx findings of the client images until
   2026-12-03

@@ -1,0 +1,73 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# Reports the check scan on every pull request into main, which the ruleset
+# of main requires. A pull request that changes the values of test or prod
+# scans the images of those stages with Trivy; any other passes at once.
+# Pull requests of the workflow promote start no workflow and report scan
+# themselves.
+
+name: Scan
+
+on:
+  pull_request:
+    branches: ['main']
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REGISTRY: crcars
+
+jobs:
+  scan:
+    # The name is the check the ruleset requires
+    name: scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the pull request
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Find the stages whose images change
+        id: stages
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          stages=$(git diff --name-only "$BASE" HEAD -- 'values/*-test.yaml' 'values/*-prod.yaml' \
+            | sed -E 's/.*-(test|prod)\.yaml$/\1/' | sort -u | tr '\n' ' ')
+          echo "stages=${stages}" >> "$GITHUB_OUTPUT"
+          if [ -z "$stages" ]; then
+            echo "No image of test or prod changes; nothing to scan" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Set up Node.js
+        if: steps.stages.outputs.stages != ''
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22.x
+
+      - name: Sign in to Azure to pull the images
+        if: steps.stages.outputs.stages != ''
+        uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID_SCAN }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Scan the images of ${{ steps.stages.outputs.stages }}
+        if: steps.stages.outputs.stages != ''
+        env:
+          STAGES: ${{ steps.stages.outputs.stages }}
+        run: |
+          images=$(for stage in $STAGES; do node images.js "$stage"; done | sort -u)
+          status=0
+          ./scan-images.sh "$RUNNER_TEMP/scan.md" $images || status=1
+          cat "$RUNNER_TEMP/scan.md" >> "$GITHUB_STEP_SUMMARY"
+          exit $status
