@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- `.trivyignore`: the workflow `promote` accepts listed findings until
+  their date `exp`; the six nginx findings of the client images until
+  2026-12-03
 - Add the workflow `promote`: it commits a promotion on a branch, scans
   the images with Trivy, reports the check `scan` and opens the pull
   request

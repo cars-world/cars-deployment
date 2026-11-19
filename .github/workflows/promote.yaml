@@ -10,7 +10,8 @@
 #   1. promote.js copies the image tags of <from> into the values of <to>
 #      on a branch of its own
 #   2. Trivy scans the images <to> will run; the result becomes the status
-#      check scan of the branch, which the rule on main requires
+#      check scan of the branch, which the rule on main requires. Findings
+#      listed in .trivyignore pass until their date exp
 #   3. the pull request opens; Argo CD syncs <to> after the merge
 #
 # A pull request opened with GITHUB_TOKEN starts no other workflow, so the
@@ -109,7 +110,9 @@ jobs:
           for image in $(node images.js "$TO"); do
             docker pull --quiet "$image"
             if docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+                -v "$PWD/.trivyignore:/trivyignore:ro" \
                 "$TRIVY_IMAGE" image --quiet --exit-code 1 --ignore-unfixed \
+                --ignorefile /trivyignore \
                 --severity "$TRIVY_SEVERITY" --format table "$image" \
                 > "$RUNNER_TEMP/trivy.txt" 2>&1; then
               echo "- ✅ \`${image}\`" >> "$RUNNER_TEMP/scan.md"

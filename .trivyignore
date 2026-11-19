@@ -1,0 +1,20 @@
+# @license
+# Copyright (c) rljson
+#
+# Use of this source code is governed by terms that can be
+# found in the LICENSE file in the root of this package.
+
+# Findings the workflow promote accepts for a limited time. Each entry names
+# its reason and expires: after exp the scan fails on it again. Remove an
+# entry as soon as the image has the fix.
+
+# nginx 1.30.6 of nginxinc/nginx-unprivileged:1.30-alpine, in the images
+# cars-origin-client and cars-custom-client; fixed in nginx 1.30.7, for which
+# no nginx-unprivileged image exists yet. Accepted on 2026-11-19 by
+# BenNajafloo; rebuild the clients as soon as 1.30.7 is published.
+CVE-2026-121810 exp:2026-12-03
+CVE-2026-123007 exp:2026-12-03
+CVE-2026-123633 exp:2026-12-03
+CVE-2026-113425 exp:2026-12-03
+CVE-2026-118899 exp:2026-12-03
+CVE-2026-123634 exp:2026-12-03

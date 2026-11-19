@@ -183,6 +183,9 @@ node test.js
 ## Limitations
 
 - Only the images are scanned, not the charts
+- `.trivyignore` accepts listed findings until their date `exp`, each
+  with its reason; today the nginx findings of the clients until
+  2026-12-03
 - The UI of Argo CD only through port-forward, with personal accounts;
   sign-in with Entra comes later
 - The cluster stops every evening; start it with `az aks start`

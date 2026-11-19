@@ -97,6 +97,14 @@ check(
   'CODEOWNERS names an owner of the values of prod',
 );
 
+const ignored = readFileSync('.trivyignore', 'utf8')
+  .split('\n')
+  .filter((line) => line.trim() && !line.startsWith('#'));
+check(
+  ignored.every((line) => /^CVE-\d+-\d+ exp:\d{4}-\d{2}-\d{2}$/.test(line.trim())),
+  `Each of the ${ignored.length} accepted findings in .trivyignore expires`,
+);
+
 if (failed) {
   console.log(`❌ ${failed} checks failed`);
   process.exit(1);
