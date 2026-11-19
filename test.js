@@ -97,6 +97,11 @@ check(
   'CODEOWNERS names an owner of the values of prod',
 );
 
+check(
+  /^ {4}name: scan$/m.test(readFileSync('.github/workflows/scan.yaml', 'utf8')),
+  'The job of scan.yaml reports the check scan the ruleset requires',
+);
+
 const ignored = readFileSync('.trivyignore', 'utf8')
   .split('\n')
   .filter((line) => line.trim() && !line.startsWith('#'));

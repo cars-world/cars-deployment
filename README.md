@@ -41,6 +41,8 @@ this repo.
 | `set-tag.js`       | Sets the image tag of one app in one stage, without committing                   |
 | `.github/workflows/build.yaml` | Reusable workflow: tests an app, builds its image into `crcars`, deploys it to `dev` |
 | `.github/workflows/promote.yaml` | Promotes a stage to the next as a pull request, with a Trivy scan as the check `scan` |
+| `.github/workflows/scan.yaml` | Reports the check `scan` on every pull request; scans when `test` or `prod` change |
+| `scan-images.sh`   | Scans images of `crcars` with Trivy; used by `promote` and `scan`                |
 | `.github/rulesets/main.json` | The rule on `main`: pull requests, the check `scan`, a code owner review for `prod` |
 | `.github/CODEOWNERS` | The reviewer of `values/*-prod.yaml`                                            |
 | `images.js`        | Lists the images of the four apps of a stage                                     |
@@ -129,6 +131,12 @@ hand, then push the branch and open a pull request:
 node promote.js dev test
 node promote.js test prod
 ```
+
+Every other pull request gets the check `scan` from the workflow `scan`:
+it passes at once unless the pull request changes the values of `test`
+or `prod`, whose images it then scans. With **Allow auto-merge** on, a
+pull request merges by itself once `scan` passes and, for `prod`, its
+code owner approved.
 
 The rule on `main` lives in `.github/rulesets/main.json`: changes go
 through pull requests with a passing `scan`; the GitHub App `cars-deploy`
