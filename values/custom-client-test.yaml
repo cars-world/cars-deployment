@@ -10,4 +10,4 @@ side: custom
 service: client
 stage: test
 image:
-  tag: 0.0.1
+  tag: 0.1.1-bf6b56c
