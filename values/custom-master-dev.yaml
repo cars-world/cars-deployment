@@ -10,4 +10,4 @@ side: custom
 service: master
 stage: dev
 image:
-  tag: 0.1.2-9853975
+  tag: 0.1.3-cee633e
