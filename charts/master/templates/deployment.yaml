@@ -22,7 +22,13 @@ spec:
     metadata:
       labels:
         {{- include "app.labels" . | nindent 8 }}
+        {{- if .Values.data.clientId }}
+        azure.workload.identity/use: "true"
+        {{- end }}
     spec:
+      {{- if .Values.data.clientId }}
+      serviceAccountName: {{ .Chart.Name }}
+      {{- end }}
       nodeSelector:
         side: {{ .Values.side }}
       tolerations:

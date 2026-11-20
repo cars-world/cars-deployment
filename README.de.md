@@ -28,7 +28,7 @@ synchron halten.
 
 | Pfad               | Inhalt                                                                              |
 | ------------------ | ----------------------------------------------------------------------------------- |
-| `charts/master`    | Helm-Chart eines Masters: der Node.js-Dienst einer Seite in einer Stufe             |
+| `charts/master`    | Helm-Chart eines Masters: der Node.js-Dienst einer Seite in einer Stufe; mit `data.clientId` der Service Account `master` mit dieser Workload Identity und die Variablen `CARS_SQL_SERVER`, `CARS_SQL_DATABASE`, `CARS_BLOB_URL`, `CARS_BLOB_CONTAINER` |
 | `charts/client`    | Helm-Chart eines Clients: die statische Website, nginx leitet `/api/` zum Master    |
 | `charts/stage`     | Helm-Chart einer Stufe: zwei Namespaces, Quoten, Netzwerkrichtlinien, die Gateways  |
 | `values`           | `<side>-<service>-<stage>.yaml`, zwölf insgesamt: Seite, Dienst, Stufe, Image-Tag   |

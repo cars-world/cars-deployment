@@ -28,7 +28,7 @@ this repo.
 
 | Path               | Content                                                                          |
 | ------------------ | -------------------------------------------------------------------------------- |
-| `charts/master`    | Helm chart of a master: the Node.js service of one side in one stage             |
+| `charts/master`    | Helm chart of a master: the Node.js service of one side in one stage; with `data.clientId`, the service account `master` with that workload identity and the variables `CARS_SQL_SERVER`, `CARS_SQL_DATABASE`, `CARS_BLOB_URL`, `CARS_BLOB_CONTAINER` |
 | `charts/client`    | Helm chart of a client: the static website, nginx forwards `/api/` to the master |
 | `charts/stage`     | Helm chart of a stage: two namespaces, quotas, network policies, the gateways    |
 | `values`           | `<side>-<service>-<stage>.yaml`, twelve in all: side, service, stage, image tag  |

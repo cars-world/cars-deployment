@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Chart `master`: with `data.clientId`, the master runs as the service
+  account `master` with that workload identity and gets the variables
+  `CARS_SQL_SERVER`, `CARS_SQL_DATABASE`, `CARS_BLOB_URL` and
+  `CARS_BLOB_CONTAINER`
 - Add the workflow `scan`: every pull request into `main` gets the check
   `scan`; it scans the images when the values of `test` or `prod` change
 - Move the Trivy scan into `scan-images.sh`, used by `promote` and `scan`
