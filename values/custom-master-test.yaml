@@ -11,3 +11,6 @@ service: master
 stage: test
 image:
   tag: 0.1.3-cee633e
+# Client ID of id-cars-custom-master-test in rg-cars (cars-infra, data-identities)
+data:
+  clientId: 6ab380b5-0d60-4bca-98ea-c899d629d733

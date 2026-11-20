@@ -11,3 +11,6 @@ service: master
 stage: prod
 image:
   tag: 0.1.3-cee633e
+# Client ID of id-cars-custom-master-prod in rg-cars (cars-infra, data-identities)
+data:
+  clientId: 3ab2ce7b-1e45-4930-9912-57844b329cc7

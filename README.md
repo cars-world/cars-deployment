@@ -31,14 +31,15 @@ this repo.
 | `charts/master`    | Helm chart of a master: the Node.js service of one side in one stage; with `data.clientId`, the service account `master` with that workload identity and the variables `CARS_SQL_SERVER`, `CARS_SQL_DATABASE`, `CARS_BLOB_URL`, `CARS_BLOB_CONTAINER` |
 | `charts/client`    | Helm chart of a client: the static website, nginx forwards `/api/` to the master |
 | `charts/stage`     | Helm chart of a stage: two namespaces, quotas, network policies, the gateways    |
-| `values`           | `<side>-<service>-<stage>.yaml`, twelve in all: side, service, stage, image tag  |
+| `values`           | `<side>-<service>-<stage>.yaml`, twelve in all: side, service, stage, image tag; the masters also the client ID of their identity |
 | `stages`           | `dev.yaml`, `test.yaml`, `prod.yaml`                                             |
-| `platform`         | The namespace `cars-gateway` and the Let's Encrypt issuers                       |
+| `platform`         | The namespace `cars-gateway`, the Let's Encrypt issuers, and the namespace `cars-data` with the job `sql-users`, which creates the database user of each master as `id-cars-sql-admin` |
 | `argocd`           | The values of Argo CD, the root application and `apps/`, which it syncs          |
 | `bootstrap.js`     | Installs Argo CD and hands it the root application                               |
 | `promote.js`       | Copies the image tags of one stage into the next, as a commit                    |
 | `set-password.js`  | Sets the password of a personal Argo CD account                                  |
 | `set-tag.js`       | Sets the image tag of one app in one stage, without committing                   |
+| `check-data.js`    | Checks from a pod per side that each master reaches its own SQL database and blob container and is refused at the other side's |
 | `.github/workflows/build.yaml` | Reusable workflow: tests an app, builds its image into `crcars`, deploys it to `dev` |
 | `.github/workflows/promote.yaml` | Promotes a stage to the next as a pull request, with a Trivy scan as the check `scan` |
 | `.github/workflows/scan.yaml` | Reports the check `scan` on every pull request; scans when `test` or `prod` change |
