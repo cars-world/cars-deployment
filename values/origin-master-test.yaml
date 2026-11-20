@@ -11,3 +11,6 @@ service: master
 stage: test
 image:
   tag: 0.1.3-8315b8a
+# Client ID of id-cars-origin-master-test in rg-cars (cars-infra, data-identities)
+data:
+  clientId: aa33007c-71ef-47ba-85f1-e69f5c0db473

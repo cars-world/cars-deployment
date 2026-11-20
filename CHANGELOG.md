@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+- The masters name the client IDs of their identities
+  `id-cars-<side>-master-<stage>`, so they run as the service account
+  `master` with the variables of their SQL database and blob container
+- Add the job `sql-users` in the namespace `cars-data`: as
+  `id-cars-sql-admin` it creates the user of each master identity in its
+  own database, member of `db_owner` there; it runs after every sync of
+  `platform`
+- Add `check-data.js`: a pod per side and stage, signed in as its master,
+  checks its own database and container and the refusal at the other side
+- `test.js` checks that each master has a client ID of its own and that
+  the job names the same ones
 - Chart `master`: with `data.clientId`, the master runs as the service
   account `master` with that workload identity and gets the variables
   `CARS_SQL_SERVER`, `CARS_SQL_DATABASE`, `CARS_BLOB_URL` and

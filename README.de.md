@@ -31,14 +31,15 @@ synchron halten.
 | `charts/master`    | Helm-Chart eines Masters: der Node.js-Dienst einer Seite in einer Stufe; mit `data.clientId` der Service Account `master` mit dieser Workload Identity und die Variablen `CARS_SQL_SERVER`, `CARS_SQL_DATABASE`, `CARS_BLOB_URL`, `CARS_BLOB_CONTAINER` |
 | `charts/client`    | Helm-Chart eines Clients: die statische Website, nginx leitet `/api/` zum Master    |
 | `charts/stage`     | Helm-Chart einer Stufe: zwei Namespaces, Quoten, Netzwerkrichtlinien, die Gateways  |
-| `values`           | `<side>-<service>-<stage>.yaml`, zwölf insgesamt: Seite, Dienst, Stufe, Image-Tag   |
+| `values`           | `<side>-<service>-<stage>.yaml`, zwölf insgesamt: Seite, Dienst, Stufe, Image-Tag; die Master auch die Client-ID ihrer Identität |
 | `stages`           | `dev.yaml`, `test.yaml`, `prod.yaml`                                                |
-| `platform`         | Der Namespace `cars-gateway` und die Aussteller von Let's Encrypt                   |
+| `platform`         | Der Namespace `cars-gateway`, die Aussteller von Let's Encrypt und der Namespace `cars-data` mit dem Job `sql-users`, der als `id-cars-sql-admin` den Datenbankbenutzer jedes Masters anlegt |
 | `argocd`           | Die Werte von Argo CD, die Root-Anwendung und `apps/`, das sie synchronisiert       |
 | `bootstrap.js`     | Installiert Argo CD und übergibt ihm die Root-Anwendung                             |
 | `promote.js`       | Kopiert die Image-Tags einer Stufe als Commit in die nächste                        |
 | `set-password.js`  | Setzt das Passwort eines persönlichen Argo-CD-Kontos                                |
 | `set-tag.js`       | Setzt den Image-Tag einer App in einer Stufe, ohne zu committen                     |
+| `check-data.js`    | Prüft aus einem Pod je Seite, dass jeder Master seine eigene SQL-Datenbank und seinen eigenen Blob-Container erreicht und bei denen der anderen Seite abgewiesen wird |
 | `.github/workflows/build.yaml` | Wiederverwendbarer Workflow: testet eine App, baut ihr Image nach `crcars`, rollt es nach `dev` aus |
 | `.github/workflows/promote.yaml` | Befördert eine Stufe als Pull Request in die nächste, mit einem Trivy-Scan als Check `scan` |
 | `.github/workflows/scan.yaml` | Meldet den Check `scan` auf jedem Pull Request; scannt, wenn sich `test` oder `prod` ändern |

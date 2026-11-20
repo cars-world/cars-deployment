@@ -11,3 +11,6 @@ service: master
 stage: dev
 image:
   tag: 0.1.3-cee633e
+# Client ID of id-cars-custom-master-dev in rg-cars (cars-infra, data-identities)
+data:
+  clientId: 00b08bbc-d940-4a9a-a508-ec95892f9834

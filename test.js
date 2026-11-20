@@ -78,6 +78,27 @@ for (const app of appNames()) {
   );
 }
 
+// Each master signs in with an identity of its own
+const clientIds = appNames()
+  .filter((app) => app.split('-')[1] === 'master')
+  .map((app) => readFileSync(`values/${app}.yaml`, 'utf8').match(/^ {2}clientId: (\S+)$/m)?.[1]);
+check(
+  clientIds.every(Boolean) && new Set(clientIds).size === clientIds.length,
+  `Each of the ${clientIds.length} masters names a client ID of its own`,
+);
+
+// The job sql-users creates the database user of the same identities
+const sqlUsers = readFileSync('platform/sql-users.yaml', 'utf8');
+check(
+  appNames()
+    .filter((app) => app.split('-')[1] === 'master')
+    .every((app, i) => {
+      const [side, , stage] = app.split('-');
+      return sqlUsers.includes(`"side": "${side}", "stage": "${stage}", "clientId": "${clientIds[i]}"`);
+    }),
+  'The job sql-users names the same client IDs as the values of the masters',
+);
+
 const revisions = argoRevisions('argocd');
 const distinct = [...new Set(revisions.map((r) => r.revision))];
 check(
