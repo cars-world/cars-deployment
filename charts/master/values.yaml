@@ -33,6 +33,16 @@ readOnlyRootFilesystem: true
 # Extra environment variables of the container
 env: {}
 
+# The data of the master on Azure: its own SQL database and blob container
+# in rg-cars, reached through the managed identity
+# id-cars-<side>-master-<stage>. With clientId set, the pod runs as the
+# service account master, federated with that identity, and gets the
+# variables CARS_SQL_SERVER, CARS_SQL_DATABASE, CARS_BLOB_URL and
+# CARS_BLOB_CONTAINER; without it, the master has no Azure data.
+data:
+  # Client ID of id-cars-<side>-master-<stage>; not a secret
+  clientId: ""
+
 resources:
   requests:
     cpu: 50m
